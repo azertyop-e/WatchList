@@ -1,0 +1,15 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class SpokenLanguage extends Model
+{
+    protected $fillable = ['iso_639_1', 'name', 'english_name'];
+    
+    public function movies()
+    {
+        return $this->belongsToMany(MovieModel::class, 'movie_spoken_languages', 'spoken_language_id', 'movie_id');
+    }
+}
