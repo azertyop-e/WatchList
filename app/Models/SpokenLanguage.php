@@ -12,4 +12,12 @@ class SpokenLanguage extends Model
     {
         return $this->belongsToMany(MovieModel::class, 'movie_spoken_languages', 'spoken_language_id', 'movie_id');
     }
+
+    /**
+     * Relation avec les séries
+     */
+    public function series()
+    {
+        return $this->belongsToMany(Series::class, 'series_spoken_languages', 'spoken_language_id', 'series_id');
+    }
 }

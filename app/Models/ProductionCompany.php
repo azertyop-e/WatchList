@@ -12,4 +12,12 @@ class ProductionCompany extends Model
     {
         return $this->belongsToMany(MovieModel::class, 'movie_production_companies', 'production_company_id', 'movie_id');
     }
+
+    /**
+     * Relation avec les séries
+     */
+    public function series()
+    {
+        return $this->belongsToMany(Series::class, 'series_production_companies', 'production_company_id', 'series_id');
+    }
 }

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class MovieModel extends Model
 {
-    protected $table = 'movieModel';
+    protected $table = 'movie';
     protected $fillable = [
         'title', 'overview', 'poster_path', 'release_date', 'vote_average', 'is_seen',
         'original_title', 'tagline', 'vote_count', 'runtime', 'original_language',

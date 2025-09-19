@@ -22,4 +22,23 @@ class Actor extends Model
     {
         return $this->hasMany(MovieRole::class, 'actor_id');
     }
+
+    /**
+     * Relation avec les séries
+     */
+    public function series()
+    {
+        return $this->belongsToMany(Series::class, 'series_roles', 'actor_id', 'series_id')
+                    ->withPivot('character_name', 'order')
+                    ->withTimestamps()
+                    ->orderBy('series_roles.order');
+    }
+
+    /**
+     * Relation avec les rôles dans les séries
+     */
+    public function seriesRoles()
+    {
+        return $this->hasMany(SeriesRole::class, 'actor_id');
+    }
 }

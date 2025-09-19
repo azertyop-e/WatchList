@@ -12,4 +12,12 @@ class ProductionCountry extends Model
     {
         return $this->belongsToMany(MovieModel::class, 'movie_production_countries', 'production_country_id', 'movie_id');
     }
+
+    /**
+     * Relation avec les séries
+     */
+    public function series()
+    {
+        return $this->belongsToMany(Series::class, 'series_production_countries', 'production_country_id', 'series_id');
+    }
 }
