@@ -16,253 +16,9 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
-/**
- * Contrôleur pour la gestion des films
- * 
- * Ce contrôleur gère toutes les opérations liées aux films :
- * - Récupération des films populaires et les mieux notés
- * - Recherche de films
- * - Sauvegarde et gestion des films en base de données
- * - Affichage des détails des films
- * - Gestion du statut "vu/non vu" des films
- * 
- * @package App\Http\Controllers
- * @author Votre Nom
- * @version 1.0
- */
-class MovieController extends Controller
+class MovieController extends MediaController
 {
-    /**
-     * Récupère et affiche les films populaires avec pagination
-     * 
-     * Cette méthode récupère les films populaires depuis l'API TMDB,
-     * applique une pagination avec validation des paramètres,
-     * et ajoute le statut de sauvegarde pour chaque film.
-     * 
-     * @param Request $request Contient les paramètres de pagination :
-     *                        - page : numéro de page (1-10, défaut: 1)
-     *                        - per_page : nombre d'éléments par page (10, 20, 50, défaut: 20)
-     * 
-     * @return \Illuminate\View\View Vue 'movie.popular' avec les données des films
-     * 
-     * @throws \Exception En cas d'erreur lors de l'appel à l'API TMDB
-     */
-    public function getPopular(Request $request)
-    {
-        $page = $request->get('page', 1);
-        $perPage = $request->get('per_page', 20);
-        
-        if ($page > 10) {
-            $page = 10;
-        }
-        if ($page < 1) {
-            $page = 1;
-        }
-        
-        $allowedPerPage = [10, 20, 50];
-        if (!in_array($perPage, $allowedPerPage)) {
-            $perPage = 20;
-        }
-        
-        $url = "/movie/popular?language=fr-FR&include_adult=false&page=" . $page;
-        $moviesData = $this->getCurlData($url);
-        $moviesData = $this->addSavedStatusToMovies($moviesData);
-        
-        $totalResults = $moviesData['total_results'] ?? 0;
-        $totalPages = min($moviesData['total_pages'] ?? 10, 10);
-        $itemsPerPage = 20;
-        $startItem = ($page - 1) * $itemsPerPage + 1;
-        $endItem = min($page * $itemsPerPage, $totalResults);
 
-        return view('movie.popular', [
-            'moviesData' => $moviesData,
-            'currentPage' => $page,
-            'totalPages' => $totalPages,
-            'perPage' => $perPage,
-            'totalResults' => $totalResults,
-            'startItem' => $startItem,
-            'endItem' => $endItem,
-            'allowedPerPage' => $allowedPerPage
-        ]);
-    }
-
-    /**
-     * Récupère les films populaires pour l'affichage en cartes
-     * 
-     * Cette méthode récupère la première page des films populaires
-     * depuis l'API TMDB pour un affichage sous forme de cartes.
-     * 
-     * @return \Illuminate\View\View Vue 'movie.popular-cards' avec les données des films
-     * 
-     * @throws \Exception En cas d'erreur lors de l'appel à l'API TMDB
-     */
-    public function getPopularCards()
-    {
-        $url = "/movie/popular?language=fr-FR&include_adult=false&page=1";
-        $moviesData = $this->getCurlData($url);
-
-        return view('movie.popular-cards', ['moviesData' => $moviesData]);
-    }
-
-    /**
-     * Récupère et affiche les films les mieux notés
-     * 
-     * Cette méthode récupère les 5 premières pages des films les mieux notés
-     * depuis l'API TMDB, les combine en une seule liste, et ajoute
-     * le statut de sauvegarde pour chaque film.
-     * 
-     * @return \Illuminate\View\View Vue 'movie.top' avec les données des films
-     * 
-     * @throws \Exception En cas d'erreur lors de l'appel à l'API TMDB
-     */
-    public function getTop()
-    {
-        $allMovies = [];
-        $totalResults = 0;
-        $totalPages = 0;
-        
-        for ($page = 1; $page <= 5; $page++) {
-            $url = "/movie/top_rated?language=fr-FR&include_adult=false&page=" . $page;
-            $pageData = $this->getCurlData($url);
-            
-            if ($pageData && isset($pageData['results'])) {
-                $allMovies = array_merge($allMovies, $pageData['results']);
-                
-                if ($page === 1) {
-                    $totalResults = $pageData['total_results'] ?? 0;
-                    $totalPages = $pageData['total_pages'] ?? 0;
-                }
-            }
-        }
-        
-        $moviesData = [
-            'results' => $allMovies,
-            'total_results' => $totalResults,
-            'total_pages' => $totalPages,
-            'page' => 1
-        ];
-        
-        $moviesData = $this->addSavedStatusToMovies($moviesData);
-        
-        return view('movie.top', ['moviesData' => $moviesData]);
-    }
-
-    /**
-     * Effectue une recherche de films et séries avec pagination
-     * 
-     * Cette méthode recherche des films et séries selon un terme de recherche
-     * via l'API TMDB avec support de la pagination et ajoute le statut 
-     * de sauvegarde pour chaque résultat.
-     * 
-     * @param Request $request Contient les paramètres :
-     *                        - 'query' : terme de recherche (requis)
-     *                        - 'page' : numéro de page (défaut: 1)
-     * 
-     * @return \Illuminate\View\View Vue 'movie.search' avec les résultats de recherche et pagination
-     * 
-     * @throws \Exception En cas d'erreur lors de l'appel à l'API TMDB
-     */
-    public function getSearch(Request $request)
-    {
-        $query = $request->query('query');
-        $page = $request->query('page', 1);
-        
-        if ($page < 1) {
-            $page = 1;
-        }
-        if ($page > 1000) { 
-            $page = 1000;
-        }
-        
-        // Utiliser un cache simple pour éviter les doublons entre les pages
-        $cacheKey = 'search_' . md5($query);
-        $lastQueryKey = 'last_search_query';
-        $lastQuery = session($lastQueryKey);
-        
-        // Si c'est une nouvelle recherche, nettoyer le cache
-        if ($lastQuery !== $query) {
-            session()->forget($cacheKey);
-            session([$lastQueryKey => $query]);
-        }
-        
-        $allCachedResults = session($cacheKey, []);
-        $resultsPerPage = 20;
-        
-        // Si on n'a pas de cache ou qu'on demande une page plus loin que ce qu'on a en cache
-        if (empty($allCachedResults) || count($allCachedResults) < ($page * $resultsPerPage)) {
-            // Récupérer les pages manquantes
-            $startApiPage = empty($allCachedResults) ? 1 : intval(count($allCachedResults) / 20) + 1;
-            $maxApiPages = min($startApiPage + 5, 1000); // Récupérer 5 pages max à la fois
-            
-            for ($currentApiPage = $startApiPage; $currentApiPage <= $maxApiPages; $currentApiPage++) {
-                $url = "/search/multi?query=".urlencode($query)."&include_adult=false&language=fr-FR&page=".$currentApiPage;
-                $searchData = $this->getCurlData($url);
-                
-                if (isset($searchData['results']) && is_array($searchData['results'])) {
-                    foreach ($searchData['results'] as $item) {
-                        if ($item['media_type'] === 'movie' || $item['media_type'] === 'tv') {
-                            $allCachedResults[] = $item;
-                        }
-                    }
-                }
-                
-                // Si on n'a plus de résultats, on s'arrête
-                if (!isset($searchData['results']) || count($searchData['results']) === 0) {
-                    break;
-                }
-            }
-            
-            // Sauvegarder le cache
-            session([$cacheKey => $allCachedResults]);
-        }
-        
-        // Extraire les résultats pour la page demandée
-        $startIndex = ($page - 1) * $resultsPerPage;
-        $filteredResults = array_slice($allCachedResults, $startIndex, $resultsPerPage);
-        
-        // Ajouter le statut de sauvegarde pour tous les résultats
-        $savedMovieIds = Movie::pluck('id')->toArray();
-        $savedSeriesIds = Series::pluck('tmdb_id')->toArray();
-        
-        foreach ($filteredResults as &$item) {
-            if ($item['media_type'] === 'movie') {
-                $item['is_saved'] = in_array($item['id'], $savedMovieIds);
-            } elseif ($item['media_type'] === 'tv') {
-                $item['is_saved'] = in_array($item['id'], $savedSeriesIds);
-            }
-        }
-        
-        // Calculer les informations de pagination basées sur le cache
-        $totalCachedResults = count($allCachedResults);
-        $totalPages = max(1, intval(ceil($totalCachedResults / $resultsPerPage)));
-        
-        // Structure pour l'affichage
-        $unifiedData = [
-            'results' => $filteredResults,
-            'total_results' => $totalCachedResults,
-            'total_pages' => $totalPages,
-            'page' => $page
-        ];
-        
-        // Calcul des informations de pagination
-        $currentPage = $page;
-        $actualResultsPerPage = count($filteredResults);
-        
-        // Calcul des éléments affichés
-        $startItem = ($currentPage - 1) * $resultsPerPage + 1;
-        $endItem = ($currentPage - 1) * $resultsPerPage + $actualResultsPerPage;
-        
-        return view('movie.search', [
-            'unifiedData' => $unifiedData,
-            'query' => $query,
-            'currentPage' => $currentPage,
-            'totalPages' => $totalPages,
-            'totalResults' => $totalCachedResults,
-            'startItem' => $startItem,
-            'endItem' => $endItem,
-            'resultsPerPage' => $actualResultsPerPage
-        ]);
-    }
 
     /**
      * Récupère les films sauvegardés non vus avec filtrage par genre
@@ -627,93 +383,166 @@ class MovieController extends Controller
     }
 
     /**
-     * Effectue un appel cURL vers l'API TMDB
+     * Retourne le type de média pour les films
      * 
-     * Cette méthode utilitaire effectue des requêtes HTTP vers l'API TMDB
-     * en utilisant cURL avec authentification Bearer token.
-     * 
-     * @param string $url L'endpoint de l'API TMDB (sans le domaine de base)
-     * 
-     * @return array|null Les données JSON décodées ou null en cas d'erreur
-     * 
-     * @throws \Exception En cas d'erreur cURL
+     * @return string Le type de média
      */
-    public function getCurlData(string $url)
+    protected function getMediaType(): string
     {
-        $curl = curl_init();
-        curl_setopt_array($curl, [
-            CURLOPT_URL => "https://api.themoviedb.org/3".$url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => "",
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 30,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => "GET",
-            CURLOPT_HTTPHEADER => [
-                "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzYjZiOTA0ODUwOTAwMmI0OGFhNjE3OGFmOTg3OTdmOCIsIm5iZiI6MTUyNjg5MjY4Mi4xMTksInN1YiI6IjViMDI4ODhhMGUwYTI2MjNlMzAxM2NiNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.U__GCj6NGxqJW_3jGpP29dEbdjeLh0eJ7a5CCmAJzlk",
-                "accept: application/json"
-            ],
-        ]);
+        return 'movie';
+    }
+
+    /**
+     * Retourne l'URL de recherche pour les films
+     * 
+     * @param string $query Le terme de recherche
+     * @param int $page Le numéro de page
+     * 
+     * @return string L'URL de recherche
+     */
+    protected function getSearchUrl(string $query, int $page): string
+    {
+        return "/search/multi?query=".urlencode($query)."&include_adult=false&language=fr-FR&page=".$page;
+    }
+
+    /**
+     * Vérifie si un élément de résultat est un film ou une série
+     * 
+     * @param array $item L'élément à vérifier
+     * 
+     * @return bool True si l'élément est valide
+     */
+    protected function isValidMediaType(array $item): bool
+    {
+        return $item['media_type'] === 'movie' || $item['media_type'] === 'tv';
+    }
+
+    /**
+     * Retourne le nom de la vue pour l'affichage des résultats de recherche de films
+     * 
+     * @return string Le nom de la vue
+     */
+    protected function getSearchView(): string
+    {
+        return 'movie.search';
+    }
+
+    /**
+     * Ajoute le statut de sauvegarde aux résultats de recherche de films
+     * 
+     * @param array $results Les résultats à enrichir
+     * 
+     * @return array Les résultats enrichis
+     */
+    protected function addSavedStatusToResults(array $results): array
+    {
+        $savedMovieIds = Movie::pluck('id')->toArray();
+        $savedSeriesIds = Series::pluck('tmdb_id')->toArray();
         
-        $response = curl_exec($curl);
-        $err = curl_error($curl);
-        
-        curl_close($curl);
-        
-        if (!$err) {
-            return json_decode($response, true);
+        foreach ($results as &$item) {
+            if ($item['media_type'] === 'movie') {
+                $item['is_saved'] = in_array($item['id'], $savedMovieIds);
+            } elseif ($item['media_type'] === 'tv') {
+                $item['is_saved'] = in_array($item['id'], $savedSeriesIds);
+            }
         }
+        
+        return $results;
+    }
+
+    /**
+     * Retourne l'URL pour récupérer les films populaires
+     * 
+     * @param int $page Le numéro de page
+     * 
+     * @return string L'URL pour les films populaires
+     */
+    protected function getPopularUrl(int $page): string
+    {
+        return "/movie/popular?language=fr-FR&include_adult=false&page=" . $page;
+    }
+
+    /**
+     * Retourne l'URL pour récupérer les films populaires en cartes
+     * 
+     * @return string L'URL pour les films populaires en cartes
+     */
+    protected function getPopularCardsUrl(): string
+    {
+        return "/movie/popular?language=fr-FR&include_adult=false&page=1";
+    }
+
+    /**
+     * Retourne l'URL pour récupérer les films les mieux notés
+     * 
+     * @param int $page Le numéro de page
+     * 
+     * @return string L'URL pour les films les mieux notés
+     */
+    protected function getTopRatedUrl(int $page): string
+    {
+        return "/movie/top_rated?language=fr-FR&include_adult=false&page=" . $page;
+    }
+
+    /**
+     * Retourne le nom de la vue pour l'affichage des films populaires
+     * 
+     * @return string Le nom de la vue
+     */
+    protected function getPopularView(): string
+    {
+        return 'movie.popular';
+    }
+
+    /**
+     * Retourne le nom de la vue pour l'affichage des films populaires en cartes
+     * 
+     * @return string Le nom de la vue
+     */
+    protected function getPopularCardsView(): string
+    {
+        return 'movie.popular-cards';
+    }
+
+    /**
+     * Retourne le nom de la vue pour l'affichage des films les mieux notés
+     * 
+     * @return string Le nom de la vue
+     */
+    protected function getTopView(): string
+    {
+        return 'movie.top';
     }
 
     /**
      * Ajoute le statut de sauvegarde aux films
      * 
-     * Cette méthode privée enrichit les données des films récupérées
-     * depuis l'API TMDB en ajoutant un champ 'is_saved' indiquant
-     * si le film est déjà sauvegardé en base de données locale.
-     * 
-     * @param array|null $moviesData Les données des films depuis l'API TMDB
+     * @param array|null $mediaData Les données des films depuis l'API TMDB
      * 
      * @return array|null Les données enrichies avec le statut de sauvegarde
      */
-    private function addSavedStatusToMovies(?array $moviesData): ?array
+    protected function addSavedStatusToMedia(?array $mediaData): ?array
     {
-        if (!$moviesData || !isset($moviesData['results'])) {
-            return $moviesData;
+        if (!$mediaData || !isset($mediaData['results'])) {
+            return $mediaData;
         }
         
         $savedMovieIds = Movie::pluck('id')->toArray();
         
-        foreach ($moviesData['results'] as &$movie) {
+        foreach ($mediaData['results'] as &$movie) {
             $movie['is_saved'] = in_array($movie['id'], $savedMovieIds);
         }
         
-        return $moviesData;
+        return $mediaData;
     }
 
     /**
-     * Ajoute le statut de sauvegarde aux séries
+     * Retourne le nom de la variable de données pour les vues de films
      * 
-     * Cette méthode privée enrichit les données des séries récupérées
-     * depuis l'API TMDB en ajoutant un champ 'is_saved' indiquant
-     * si la série est déjà sauvegardée en base de données locale.
-     * 
-     * @param array|null $seriesData Les données des séries depuis l'API TMDB
-     * 
-     * @return array|null Les données enrichies avec le statut de sauvegarde
+     * @return string Le nom de la variable
      */
-    private function addSavedStatusToSeries(?array $seriesData): ?array
+    protected function getDataVariableName(): string
     {
-        if (!$seriesData || !isset($seriesData['results'])) {
-            return $seriesData;
-        }
-        
-        $savedSeriesIds = Series::pluck('tmdb_id')->toArray();
-        
-        foreach ($seriesData['results'] as &$series) {
-            $series['is_saved'] = in_array($series['id'], $savedSeriesIds);
-        }
-        
-        return $seriesData;
+        return 'moviesData';
     }
 }

@@ -24,13 +24,22 @@ class MediaCard extends Component
         $this->media = $media;
         $this->isObject = is_object($media);
         
-        // Déterminer le type de média
-        $this->mediaType = $this->isObject ? 'movie' : ($media['media_type'] ?? 'movie');
+        if ($this->isObject) {
+            $this->mediaType = get_class($media) === 'App\Models\Series' ? 'tv' : 'movie';
+        } else {
+            if (isset($media['media_type'])) {
+                $this->mediaType = $media['media_type'];
+            } elseif (isset($media['name']) && !isset($media['title'])) {
+                $this->mediaType = 'tv';
+            } elseif (isset($media['first_air_date']) && !isset($media['release_date'])) {
+                $this->mediaType = 'tv'; 
+            } else {
+                $this->mediaType = 'movie';
+            }
+        }
         
-        // Désactiver le bouton de sauvegarde pour les séries pour l'instant
-        $this->showSaveButton = $showSaveButton && $this->mediaType === 'movie';
+        $this->showSaveButton = $showSaveButton;
         
-        // Adapter les propriétés selon le type de média
         if ($this->mediaType === 'tv') {
             $this->title = $this->isObject ? $media->name : ($media['name'] ?? '');
             $this->releaseDate = $this->isObject ? $media->first_air_date : ($media['first_air_date'] ?? null);
@@ -54,22 +63,25 @@ class MediaCard extends Component
 
     public function getDetailRoute()
     {
-        // Pour l'instant, utiliser les routes de films pour les séries aussi
-        // TODO: Créer des routes spécifiques pour les séries
+        if ($this->mediaType === 'tv') {
+            return route('series.detail', ['id' => $this->id]);
+        }
         return route('movie.detail', ['id' => $this->id]);
     }
 
     public function getSaveRoute()
     {
-        // Pour l'instant, utiliser les routes de films pour les séries aussi
-        // TODO: Créer des routes spécifiques pour les séries
+        if ($this->mediaType === 'tv') {
+            return route('series.save');
+        }
         return route('movie.save');
     }
 
     public function getMarkSeenRoute()
     {
-        // Pour l'instant, utiliser les routes de films pour les séries aussi
-        // TODO: Créer des routes spécifiques pour les séries
+        if ($this->mediaType === 'tv') {
+            return route('series.mark-seen');
+        }
         return route('movie.mark-seen');
     }
 

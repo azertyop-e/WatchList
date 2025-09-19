@@ -27,6 +27,15 @@
                     <a href="{{ Route('movie.seen') }}" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 {{ request()->is('movie/seen') ? 'bg-blue-50 text-blue-600' : '' }}">
                         Films Vus
                     </a>
+                    <a href="{{ Route('series.popular') }}" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 {{ request()->is('series/popular') ? 'bg-blue-50 text-blue-600' : '' }}">
+                        Séries Populaires
+                    </a>
+                    <a href="{{ Route('series.top') }}" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 {{ request()->is('series/top') ? 'bg-blue-50 text-blue-600' : '' }}">
+                        Top Séries
+                    </a>
+                    <a href="{{ Route('series.seen') }}" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 {{ request()->is('series/seen') ? 'bg-blue-50 text-blue-600' : '' }}">
+                        Séries Vues
+                    </a>
                 </div>
             </div>
         </div>
@@ -73,8 +82,12 @@
                     <ul class="space-y-2">
                         <li><a href="{{ route('movie.popular') }}" class="text-gray-600 hover:text-blue-600 transition-colors duration-200 {{ request()->is('movie/popular') ? 'bg-blue-50 text-blue-600 px-2 py-1 rounded-md' : '' }}">Films Populaires</a></li>
                         <li><a href="{{ route('movie.top') }}" class="text-gray-600 hover:text-blue-600 transition-colors duration-200 {{ request()->is('movie/top') ? 'bg-blue-50 text-blue-600 px-2 py-1 rounded-md' : '' }}">Top Films</a></li>
-                        <li><a href="{{ route('movie.search') }}" class="text-gray-600 hover:text-blue-600 transition-colors duration-200 {{ request()->is('movie/search') ? 'bg-blue-50 text-blue-600 px-2 py-1 rounded-md' : '' }}">Recherche</a></li>
+                        <li><a href="{{ route('movie.search') }}" class="text-gray-600 hover:text-blue-600 transition-colors duration-200 {{ request()->is('movie/search') ? 'bg-blue-50 text-blue-600 px-2 py-1 rounded-md' : '' }}">Recherche Films</a></li>
                         <li><a href="{{ route('movie.seen') }}" class="text-gray-600 hover:text-blue-600 transition-colors duration-200 {{ request()->is('movie/seen') ? 'bg-blue-50 text-blue-600 px-2 py-1 rounded-md' : '' }}">Films Vus</a></li>
+                        <li><a href="{{ route('series.popular') }}" class="text-gray-600 hover:text-blue-600 transition-colors duration-200 {{ request()->is('series/popular') ? 'bg-blue-50 text-blue-600 px-2 py-1 rounded-md' : '' }}">Séries Populaires</a></li>
+                        <li><a href="{{ route('series.top') }}" class="text-gray-600 hover:text-blue-600 transition-colors duration-200 {{ request()->is('series/top') ? 'bg-blue-50 text-blue-600 px-2 py-1 rounded-md' : '' }}">Top Séries</a></li>
+                        <li><a href="{{ route('series.search') }}" class="text-gray-600 hover:text-blue-600 transition-colors duration-200 {{ request()->is('series/search') ? 'bg-blue-50 text-blue-600 px-2 py-1 rounded-md' : '' }}">Recherche Séries</a></li>
+                        <li><a href="{{ route('series.seen') }}" class="text-gray-600 hover:text-blue-600 transition-colors duration-200 {{ request()->is('series/seen') ? 'bg-blue-50 text-blue-600 px-2 py-1 rounded-md' : '' }}">Séries Vues</a></li>
                         <li><a href="{{ route('home') }}" class="text-gray-600 hover:text-blue-600 transition-colors duration-200 {{ request()->is('/') ? 'bg-blue-50 text-blue-600 px-2 py-1 rounded-md' : '' }}">Ma Liste</a></li>
                     </ul>
                 </div>
