@@ -78,7 +78,7 @@ class Series extends Model
      */
     public function genders(): BelongsToMany
     {
-        return $this->belongsToMany(GendersModel::class, 'series_genders', 'series_id', 'gender_id')
+        return $this->belongsToMany(Gender::class, 'series_genders', 'series_id', 'gender_id')
                     ->withTimestamps();
     }
 

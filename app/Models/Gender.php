@@ -4,9 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class GendersModel extends Model
+class Gender extends Model
 {
-    protected $table = 'gendersModel';
+    protected $table = 'gender';
     protected $fillable = ['id', 'tmdb_id', 'name'];
     
     public function movies()

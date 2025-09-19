@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\MovieModel;
-use App\Models\GendersModel;
+use App\Models\Gender;
 use App\Models\ProductionCompany;
 use App\Models\ProductionCountry;
 use App\Models\SpokenLanguage;
@@ -185,7 +185,7 @@ class MovieController extends Controller
         if ($request->has('genre') && $request->input('genre') != '') {
             $genreId = $request->input('genre');
             $query->whereHas('genders', function($q) use ($genreId) {
-                $q->where('gendersModel.id', $genreId);
+                $q->where('gender.id', $genreId);
             });
         }
         
@@ -193,7 +193,7 @@ class MovieController extends Controller
         
         $movies = $query->orderBy('created_at', 'desc')->get();
         
-        $genres = GendersModel::whereHas('movies', function($q) {
+        $genres = Gender::whereHas('movies', function($q) {
             $q->where('is_seen', false);
         })->orderBy('name')->get();
         
@@ -222,7 +222,7 @@ class MovieController extends Controller
         if ($request->has('genre') && $request->input('genre') != '') {
             $genreId = $request->input('genre');
             $query->whereHas('genders', function($q) use ($genreId) {
-                $q->where('gendersModel.id', $genreId);
+                $q->where('gender.id', $genreId);
             });
         }
         
@@ -230,7 +230,7 @@ class MovieController extends Controller
         
         $movies = $query->orderBy('updated_at', 'desc')->get();
         
-        $genres = GendersModel::whereHas('movies', function($q) {
+        $genres = Gender::whereHas('movies', function($q) {
             $q->where('is_seen', true);
         })->orderBy('name')->get();
         
@@ -373,7 +373,7 @@ class MovieController extends Controller
             
             if (isset($movieData['genres']) && is_array($movieData['genres'])) {
                 foreach ($movieData['genres'] as $genreData) {
-                    $genre = GendersModel::firstOrCreate(
+                    $genre = Gender::firstOrCreate(
                         ['tmdb_id' => $genreData['id']], 
                         ['name' => $genreData['name']] 
                     );

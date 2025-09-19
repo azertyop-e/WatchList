@@ -15,7 +15,7 @@ class MovieModel extends Model
 
     public function genders()
     {
-        return $this->belongsToMany(GendersModel::class, 'gender_movie', 'movie_id', 'gender_id');
+        return $this->belongsToMany(Gender::class, 'gender_movie', 'movie_id', 'gender_id');
     }
 
     public function productionCompanies()

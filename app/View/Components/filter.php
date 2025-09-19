@@ -5,7 +5,7 @@ namespace App\View\Components;
 use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
-use App\Models\GendersModel;
+use App\Models\Gender;
 use App\Models\MovieModel;
 
 class filter extends Component
@@ -42,11 +42,11 @@ class filter extends Component
     private function getAvailableGenres()
     {
         if ($this->context === 'seen') {
-            return GendersModel::whereHas('movies', function($query) {
+            return Gender::whereHas('movies', function($query) {
                 $query->where('is_seen', true);
             })->orderBy('name')->get();
         } else {
-            return GendersModel::whereHas('movies', function($query) {
+            return Gender::whereHas('movies', function($query) {
                 $query->where('is_seen', false);
             })->orderBy('name')->get();
         }
