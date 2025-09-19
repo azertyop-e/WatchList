@@ -189,6 +189,8 @@ class MovieController extends Controller
             });
         }
         
+        $selectedType = $request->input('type', 'film');
+        
         $movies = $query->orderBy('created_at', 'desc')->get();
         
         $genres = GendersModel::whereHas('movies', function($q) {
@@ -198,7 +200,8 @@ class MovieController extends Controller
         return view('home', [
             'movies' => $movies,
             'genres' => $genres,
-            'selectedGenre' => $request->input('genre', '')
+            'selectedGenre' => $request->input('genre', ''),
+            'selectedType' => $selectedType
         ]);
     }
 
@@ -223,6 +226,8 @@ class MovieController extends Controller
             });
         }
         
+        $selectedType = $request->input('type', 'film');
+        
         $movies = $query->orderBy('updated_at', 'desc')->get();
         
         $genres = GendersModel::whereHas('movies', function($q) {
@@ -232,7 +237,8 @@ class MovieController extends Controller
         return view('movie.seen', [
             'movies' => $movies,
             'genres' => $genres,
-            'selectedGenre' => $request->input('genre', '')
+            'selectedGenre' => $request->input('genre', ''),
+            'selectedType' => $selectedType
         ]);
     }
 

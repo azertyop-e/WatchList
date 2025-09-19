@@ -10,21 +10,13 @@
             Voici tous les films que vous avez marqués comme vus.
         </p>
         
-        <div class="flex flex-wrap gap-2 mb-6">
-            <a href="{{ route('movie.seen') }}" 
-                class="inline-block text-sm px-3 py-2 rounded-full font-medium transition-colors duration-200 {{ !isset($selectedGenre) || $selectedGenre == '' ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-600 hover:bg-gray-300' }}">
-                Tous les genres
-            </a>
-            
-            @if(isset($genres))
-                @foreach($genres as $genre)
-                    <a href="{{ route('movie.seen', ['genre' => $genre->id]) }}" 
-                        class="inline-block text-sm px-3 py-2 rounded-full font-medium transition-colors duration-200 {{ (isset($selectedGenre) && $selectedGenre == $genre->id) ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-600 hover:bg-gray-300' }}">
-                        {{ $genre->name }}
-                    </a>
-                @endforeach
-            @endif
-        </div>
+        <x-filter 
+            :selectedGenre="$selectedGenre ?? ''" 
+            :selectedType="$selectedType ?? 'film'" 
+            currentRoute="movie.seen" 
+            :currentParams="[]" 
+            context="seen"
+        />
     </div>
 
     @if(isset($movies) && count($movies) > 0)
