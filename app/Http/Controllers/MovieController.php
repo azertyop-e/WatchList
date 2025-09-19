@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Movie;
+use App\Models\Series;
 use App\Models\Gender;
 use App\Models\ProductionCompany;
 use App\Models\ProductionCountry;
@@ -147,24 +148,120 @@ class MovieController extends Controller
     }
 
     /**
-     * Effectue une recherche de films
+     * Effectue une recherche de films et séries avec pagination
      * 
-     * Cette méthode recherche des films selon un terme de recherche
-     * via l'API TMDB et ajoute le statut de sauvegarde pour chaque résultat.
+     * Cette méthode recherche des films et séries selon un terme de recherche
+     * via l'API TMDB avec support de la pagination et ajoute le statut 
+     * de sauvegarde pour chaque résultat.
      * 
-     * @param Request $request Contient le paramètre 'query' pour la recherche
+     * @param Request $request Contient les paramètres :
+     *                        - 'query' : terme de recherche (requis)
+     *                        - 'page' : numéro de page (défaut: 1)
      * 
-     * @return \Illuminate\View\View Vue 'movie.search' avec les résultats de recherche
+     * @return \Illuminate\View\View Vue 'movie.search' avec les résultats de recherche et pagination
      * 
      * @throws \Exception En cas d'erreur lors de l'appel à l'API TMDB
      */
     public function getSearch(Request $request)
     {
-        $url = "/search/movie?query=".$request->query('query')."&language=fr-FR&include_adult=false&page=1";
-        $moviesData = $this->getCurlData($url);
-        $moviesData = $this->addSavedStatusToMovies($moviesData);
+        $query = $request->query('query');
+        $page = $request->query('page', 1);
         
-        return view('movie.search', ['moviesData' => $moviesData]);
+        if ($page < 1) {
+            $page = 1;
+        }
+        if ($page > 1000) { 
+            $page = 1000;
+        }
+        
+        // Utiliser un cache simple pour éviter les doublons entre les pages
+        $cacheKey = 'search_' . md5($query);
+        $lastQueryKey = 'last_search_query';
+        $lastQuery = session($lastQueryKey);
+        
+        // Si c'est une nouvelle recherche, nettoyer le cache
+        if ($lastQuery !== $query) {
+            session()->forget($cacheKey);
+            session([$lastQueryKey => $query]);
+        }
+        
+        $allCachedResults = session($cacheKey, []);
+        $resultsPerPage = 20;
+        
+        // Si on n'a pas de cache ou qu'on demande une page plus loin que ce qu'on a en cache
+        if (empty($allCachedResults) || count($allCachedResults) < ($page * $resultsPerPage)) {
+            // Récupérer les pages manquantes
+            $startApiPage = empty($allCachedResults) ? 1 : intval(count($allCachedResults) / 20) + 1;
+            $maxApiPages = min($startApiPage + 5, 1000); // Récupérer 5 pages max à la fois
+            
+            for ($currentApiPage = $startApiPage; $currentApiPage <= $maxApiPages; $currentApiPage++) {
+                $url = "/search/multi?query=".urlencode($query)."&include_adult=false&language=fr-FR&page=".$currentApiPage;
+                $searchData = $this->getCurlData($url);
+                
+                if (isset($searchData['results']) && is_array($searchData['results'])) {
+                    foreach ($searchData['results'] as $item) {
+                        if ($item['media_type'] === 'movie' || $item['media_type'] === 'tv') {
+                            $allCachedResults[] = $item;
+                        }
+                    }
+                }
+                
+                // Si on n'a plus de résultats, on s'arrête
+                if (!isset($searchData['results']) || count($searchData['results']) === 0) {
+                    break;
+                }
+            }
+            
+            // Sauvegarder le cache
+            session([$cacheKey => $allCachedResults]);
+        }
+        
+        // Extraire les résultats pour la page demandée
+        $startIndex = ($page - 1) * $resultsPerPage;
+        $filteredResults = array_slice($allCachedResults, $startIndex, $resultsPerPage);
+        
+        // Ajouter le statut de sauvegarde pour tous les résultats
+        $savedMovieIds = Movie::pluck('id')->toArray();
+        $savedSeriesIds = Series::pluck('tmdb_id')->toArray();
+        
+        foreach ($filteredResults as &$item) {
+            if ($item['media_type'] === 'movie') {
+                $item['is_saved'] = in_array($item['id'], $savedMovieIds);
+            } elseif ($item['media_type'] === 'tv') {
+                $item['is_saved'] = in_array($item['id'], $savedSeriesIds);
+            }
+        }
+        
+        // Calculer les informations de pagination basées sur le cache
+        $totalCachedResults = count($allCachedResults);
+        $totalPages = max(1, intval(ceil($totalCachedResults / $resultsPerPage)));
+        
+        // Structure pour l'affichage
+        $unifiedData = [
+            'results' => $filteredResults,
+            'total_results' => $totalCachedResults,
+            'total_pages' => $totalPages,
+            'page' => $page
+        ];
+        
+        // Calcul des informations de pagination
+        $currentPage = $page;
+        $actualResultsPerPage = count($filteredResults);
+        
+        // Calcul des éléments affichés
+        $startItem = ($currentPage - 1) * $resultsPerPage + 1;
+        $endItem = ($currentPage - 1) * $resultsPerPage + $actualResultsPerPage;
+        
+        return view('movie.search', [
+            'unifiedData' => $unifiedData,
+            'query' => $query,
+            'currentPage' => $currentPage,
+            'totalPages' => $totalPages,
+            'totalResults' => $totalCachedResults,
+            'startItem' => $startItem,
+            'endItem' => $endItem,
+            'resultsPerPage' => $actualResultsPerPage
+        ]);
     }
 
     /**
@@ -592,5 +689,31 @@ class MovieController extends Controller
         }
         
         return $moviesData;
+    }
+
+    /**
+     * Ajoute le statut de sauvegarde aux séries
+     * 
+     * Cette méthode privée enrichit les données des séries récupérées
+     * depuis l'API TMDB en ajoutant un champ 'is_saved' indiquant
+     * si la série est déjà sauvegardée en base de données locale.
+     * 
+     * @param array|null $seriesData Les données des séries depuis l'API TMDB
+     * 
+     * @return array|null Les données enrichies avec le statut de sauvegarde
+     */
+    private function addSavedStatusToSeries(?array $seriesData): ?array
+    {
+        if (!$seriesData || !isset($seriesData['results'])) {
+            return $seriesData;
+        }
+        
+        $savedSeriesIds = Series::pluck('tmdb_id')->toArray();
+        
+        foreach ($seriesData['results'] as &$series) {
+            $series['is_saved'] = in_array($series['id'], $savedSeriesIds);
+        }
+        
+        return $seriesData;
     }
 }
