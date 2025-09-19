@@ -10,7 +10,7 @@ class SpokenLanguage extends Model
     
     public function movies()
     {
-        return $this->belongsToMany(MovieModel::class, 'movie_spoken_languages', 'spoken_language_id', 'movie_id');
+        return $this->belongsToMany(Movie::class, 'movie_spoken_languages', 'spoken_language_id', 'movie_id');
     }
 
     /**

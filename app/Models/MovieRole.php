@@ -12,7 +12,7 @@ class MovieRole extends Model
 
     public function movie()
     {
-        return $this->belongsTo(MovieModel::class, 'movie_id');
+        return $this->belongsTo(Movie::class, 'movie_id');
     }
 
     public function actor()

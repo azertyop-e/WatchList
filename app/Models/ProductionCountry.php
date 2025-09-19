@@ -10,7 +10,7 @@ class ProductionCountry extends Model
     
     public function movies()
     {
-        return $this->belongsToMany(MovieModel::class, 'movie_production_countries', 'production_country_id', 'movie_id');
+        return $this->belongsToMany(Movie::class, 'movie_production_countries', 'production_country_id', 'movie_id');
     }
 
     /**

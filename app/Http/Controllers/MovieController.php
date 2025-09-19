@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\MovieModel;
+use App\Models\Movie;
 use App\Models\Gender;
 use App\Models\ProductionCompany;
 use App\Models\ProductionCountry;
@@ -180,7 +180,7 @@ class MovieController extends Controller
      * @return \Illuminate\View\View Vue 'home' avec les films et genres
      */
     public function getMovieStored(Request $request){
-        $query = MovieModel::with('genders')->where('is_seen', false);
+        $query = Movie::with('genders')->where('is_seen', false);
         
         if ($request->has('genre') && $request->input('genre') != '') {
             $genreId = $request->input('genre');
@@ -217,7 +217,7 @@ class MovieController extends Controller
      * @return \Illuminate\View\View Vue 'movie.seen' avec les films vus et genres
      */
     public function getSeenMovies(Request $request){
-        $query = MovieModel::with('genders')->where('is_seen', true);
+        $query = Movie::with('genders')->where('is_seen', true);
         
         if ($request->has('genre') && $request->input('genre') != '') {
             $genreId = $request->input('genre');
@@ -258,7 +258,7 @@ class MovieController extends Controller
      */
     public function getMovieDetails(int $id)
     {
-        $movie = MovieModel::with([
+        $movie = Movie::with([
             'genders',
             'productionCompanies',
             'productionCountries', 
@@ -343,7 +343,7 @@ class MovieController extends Controller
         if ($request->has ('movie_id') && $request->input ('movie_id') > 0) {
             $movieId = $request->input('movie_id');
             
-            $existingMovie = MovieModel::where('id', $movieId)->first();
+            $existingMovie = Movie::where('id', $movieId)->first();
             if ($existingMovie) {
                 return Redirect::back()->with('error', 'Ce film est déjà dans votre liste');
             }
@@ -351,7 +351,7 @@ class MovieController extends Controller
             $movieData = $this->getCurlData ('/movie/' . $movieId. '?language=fr-FR&include_adult=false');
             $creditsData = $this->getCurlData('/movie/' . $movieId . '/credits?language=fr-FR');
 
-            $movie = new MovieModel();
+            $movie = new Movie();
             $movie->title = $movieData['title'];
             $movie->overview = $movieData['overview'];
             $movie->poster_path = $movieData['poster_path'];
@@ -494,7 +494,7 @@ class MovieController extends Controller
     public function markAsSeen(Request $request)
     {
         $movieId = $request->input('movie_id');
-        $movie = MovieModel::find($movieId);
+        $movie = Movie::find($movieId);
         
         if ($movie) {
             $movie->is_seen = true;
@@ -518,7 +518,7 @@ class MovieController extends Controller
     public function markAsUnseen(Request $request)
     {
         $movieId = $request->input('movie_id');
-        $movie = MovieModel::find($movieId);
+        $movie = Movie::find($movieId);
         
         if ($movie) {
             $movie->is_seen = false;
@@ -585,7 +585,7 @@ class MovieController extends Controller
             return $moviesData;
         }
         
-        $savedMovieIds = MovieModel::pluck('id')->toArray();
+        $savedMovieIds = Movie::pluck('id')->toArray();
         
         foreach ($moviesData['results'] as &$movie) {
             $movie['is_saved'] = in_array($movie['id'], $savedMovieIds);

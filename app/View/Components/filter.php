@@ -6,7 +6,7 @@ use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 use App\Models\Gender;
-use App\Models\MovieModel;
+use App\Models\Movie;
 
 class filter extends Component
 {

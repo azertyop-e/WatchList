@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class MovieModel extends Model
+class Movie extends Model
 {
     protected $table = 'movie';
     protected $fillable = [
