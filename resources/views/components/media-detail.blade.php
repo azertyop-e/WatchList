@@ -320,5 +320,9 @@
                 </div>
             </div>
         @endif
+
+        @if($mediaType === 'series')
+            <x-episodes-selector :series="$mediaData" />
+        @endif
     </div>
 </div>
