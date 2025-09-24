@@ -71,7 +71,7 @@
                             <h3 class="text-sm font-semibold text-gray-700 mb-2">Genres</h3>
                             <div class="flex flex-wrap gap-2">
                                 @foreach($mediaData['genres'] as $genre)
-                                    <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">{{ $genre['name'] }}</span>
+                                    <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">{{ \App\Helpers\TranslationHelper::translateGenre($genre['name']) }}</span>
                                 @endforeach
                             </div>
                         </div>
@@ -112,7 +112,7 @@
                         @if(isset($mediaData['status']))
                             <div>
                                 <span class="text-sm font-semibold text-gray-700">Statut :</span>
-                                <span class="ml-2 text-gray-600">{{ $mediaData['status'] }}</span>
+                                <span class="ml-2 text-gray-600">{{ \App\Helpers\TranslationHelper::translateStatus($mediaData['status'], $mediaType) }}</span>
                             </div>
                         @endif
                         

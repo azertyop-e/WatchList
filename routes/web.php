@@ -19,14 +19,25 @@ Route::controller(MovieController::class)->prefix('movie')->name('movie.')->grou
 });
 
 Route::controller(SerieController::class)->prefix('series')->name('series.')->group(function () {
+    Route::get('/home', 'getSeriesStored')->name('home');
     Route::get('/popular', 'getPopular')->name('popular');
     Route::get('/top', 'getTop')->name('top');
     Route::get('/search', 'getSearch')->name('search');
     Route::get('/seen', 'getSeenMedia')->name('seen');
 
-    Route::post('/save', 'saveMedia')->name('save');
+    Route::post('/save', 'saveSeries')->name('save');
+    Route::post('/save-complete/{tmdbId}', 'saveCompleteSeries')->name('save-complete')->where('tmdbId', '[0-9]+');
+    Route::put('/update-complete/{tmdbId}', 'updateCompleteSeries')->name('update-complete')->where('tmdbId', '[0-9]+');
     Route::post('/mark-seen', 'markAsSeen')->name('mark-seen');
     Route::post('/mark-unseen', 'markAsUnseen')->name('mark-unseen');
+    
+    Route::post('/{seriesTmdbId}/seasons/save-all', 'saveAllSeasons')->name('seasons.save-all')->where('seriesTmdbId', '[0-9]+');
+    Route::post('/{seriesTmdbId}/seasons/{seasonNumber}/save', 'saveSeason')->name('seasons.save')->where(['seriesTmdbId' => '[0-9]+', 'seasonNumber' => '[0-9]+']);
+    Route::get('/{seriesTmdbId}/seasons/{seasonNumber}', 'getSeasonDetails')->name('seasons.details')->where(['seriesTmdbId' => '[0-9]+', 'seasonNumber' => '[0-9]+']);
+    
+    Route::post('/episodes/mark-watched', 'markEpisodeAsWatched')->name('episodes.mark-watched');
+    Route::post('/episodes/mark-unwatched', 'markEpisodeAsUnwatched')->name('episodes.mark-unwatched');
+    
     Route::get('/{id}', 'getMediaDetails')->name('detail')->where('id', '[0-9]+');
 });
 

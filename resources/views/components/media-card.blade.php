@@ -60,7 +60,7 @@
                     <div class="flex flex-wrap gap-1">
                         @foreach($media->genders as $genre)
                             <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">
-                                {{ $genre->name }}
+                                {{ \App\Helpers\TranslationHelper::translateGenre($genre->name) }}
                             </span>
                         @endforeach
                     </div>

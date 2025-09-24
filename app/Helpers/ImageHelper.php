@@ -50,4 +50,19 @@ class ImageHelper
     
         return 'https://image.tmdb.org/t/p/w185/' . $profilePath;
     }
+
+    public static function getStillUrl($stillPath)
+    {
+        if (!$stillPath) {
+            return null;
+        }
+
+        $localPath = 'still/' . $stillPath;
+        
+        if (Storage::disk('public')->exists($localPath)) {
+            return asset(Storage::url($localPath));
+        }
+    
+        return 'https://image.tmdb.org/t/p/w300/' . $stillPath;
+    }
 }
