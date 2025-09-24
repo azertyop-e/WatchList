@@ -33,23 +33,64 @@ class filter extends Component
         $this->genres = $this->getAvailableGenres();
         
         $this->urls = $this->generateUrls();
-        $this->hasActiveFilters = $this->selectedGenre != '' || $this->selectedType != 'film';
+        $this->hasActiveFilters = $this->selectedGenre != '' || ($this->selectedType != 'all');
     }
 
     /**
-     * Récupère uniquement les genres des films présents dans la liste
+     * Récupère les genres des films et séries présents dans la liste selon le type sélectionné
      */
     private function getAvailableGenres()
     {
-        if ($this->context === 'seen') {
-            return Gender::whereHas('movies', function($query) {
-                $query->where('is_seen', true);
-            })->orderBy('name')->get();
-        } else {
-            return Gender::whereHas('movies', function($query) {
-                $query->where('is_seen', false);
-            })->orderBy('name')->get();
+        $genres = collect();
+        
+        // Si le type est 'all', on récupère les genres des deux types
+        if ($this->selectedType === 'all') {
+            if ($this->context === 'seen') {
+                $movieGenres = Gender::whereHas('movies', function($query) {
+                    $query->where('is_seen', true);
+                })->get();
+                
+                $seriesGenres = Gender::whereHas('series', function($query) {
+                    $query->where('is_watched', true);
+                })->get();
+            } else {
+                $movieGenres = Gender::whereHas('movies', function($query) {
+                    $query->where('is_seen', false);
+                })->get();
+                
+                $seriesGenres = Gender::whereHas('series', function($query) {
+                    $query->where('is_watched', false);
+                })->get();
+            }
+            
+            $genres = $movieGenres->merge($seriesGenres);
+        } 
+        // Si le type est 'film', on récupère seulement les genres des films
+        elseif ($this->selectedType === 'film') {
+            if ($this->context === 'seen') {
+                $genres = Gender::whereHas('movies', function($query) {
+                    $query->where('is_seen', true);
+                })->get();
+            } else {
+                $genres = Gender::whereHas('movies', function($query) {
+                    $query->where('is_seen', false);
+                })->get();
+            }
+        } 
+        // Si le type est 'serie', on récupère seulement les genres des séries
+        elseif ($this->selectedType === 'serie') {
+            if ($this->context === 'seen') {
+                $genres = Gender::whereHas('series', function($query) {
+                    $query->where('is_watched', true);
+                })->get();
+            } else {
+                $genres = Gender::whereHas('series', function($query) {
+                    $query->where('is_watched', false);
+                })->get();
+            }
         }
+        
+        return $genres->unique('id')->sortBy('name');
     }
 
     /**
@@ -58,14 +99,15 @@ class filter extends Component
     private function generateUrls()
     {
         $urls = [
+            'all' => $this->buildUrl($this->selectedGenre, 'all'),
             'film' => $this->buildUrl($this->selectedGenre, 'film'),
             'serie' => $this->buildUrl($this->selectedGenre, 'serie'),
             
             'all_genres' => $this->buildUrl('', $this->selectedType),
             
-            'remove_type' => $this->buildUrl($this->selectedGenre, 'film'),
+            'remove_type' => $this->buildUrl($this->selectedGenre, 'all'),
             'remove_genre' => $this->buildUrl('', $this->selectedType),
-            'remove_all' => $this->buildUrl('', 'film'),
+            'remove_all' => $this->buildUrl('', 'all'),
         ];
         
         foreach ($this->genres as $genre) {

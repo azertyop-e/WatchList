@@ -464,25 +464,41 @@ class SerieController extends MediaController
     }
 
     /**
-     * Récupère les séries stockées par l'utilisateur (non vues)
+     * Récupère les séries vues par l'utilisateur avec filtrage par genre
+     * 
+     * Cette méthode récupère toutes les séries sauvegardées en base de données
+     * qui ont été marquées comme vues, avec possibilité de filtrer par genre.
+     * Elle récupère également la liste des genres disponibles pour le filtrage.
+     * 
+     * @param Request $request Contient le paramètre optionnel 'genre' pour le filtrage
+     * 
+     * @return \Illuminate\View\View Vue 'series.seen' avec les séries vues et genres
      */
-    public function getSeriesStored()
+    public function getSeenMedia(Request $request)
     {
-        $series = Series::where('is_watched', false)
-                        ->with(['genders', 'networks'])
-                        ->orderBy('created_at', 'desc')
-                        ->get();
+        $query = Series::with('genders')->where('is_watched', true);
         
-        return view('series.home', ['series' => $series]);
-    }
-
-    /**
-     * Récupère les séries vues par l'utilisateur
-     */
-    public function getSeenMedia()
-    {
-        $seenSeries = Series::where('is_watched', true)->get();
-        return view('series.seen', ['seriesData' => $seenSeries]);
+        if ($request->has('genre') && $request->input('genre') != '') {
+            $genreId = $request->input('genre');
+            $query->whereHas('genders', function($q) use ($genreId) {
+                $q->where('gender.id', $genreId);
+            });
+        }
+        
+        $selectedType = $request->input('type', 'serie');
+        
+        $series = $query->orderBy('updated_at', 'desc')->get();
+        
+        $genres = Gender::whereHas('series', function($q) {
+            $q->where('is_watched', true);
+        })->orderBy('name')->get();
+        
+        return view('series.seen', [
+            'series' => $series,
+            'genres' => $genres,
+            'selectedGenre' => $request->input('genre', ''),
+            'selectedType' => $selectedType
+        ]);
     }
 
     /**

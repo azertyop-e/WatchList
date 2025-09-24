@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MovieController;
 use App\Http\Controllers\SerieController;
 
-Route::get('/', [MovieController::class, 'getMovieStored'])->name('home');
+Route::get('/', [MovieController::class, 'getMediaStored'])->name('home');
 
 Route::controller(MovieController::class)->prefix('movie')->name('movie.')->group(function () {
     Route::get('/popular', 'getPopular')->name('popular');
@@ -19,7 +19,6 @@ Route::controller(MovieController::class)->prefix('movie')->name('movie.')->grou
 });
 
 Route::controller(SerieController::class)->prefix('series')->name('series.')->group(function () {
-    Route::get('/home', 'getSeriesStored')->name('home');
     Route::get('/popular', 'getPopular')->name('popular');
     Route::get('/top', 'getTop')->name('top');
     Route::get('/search', 'getSearch')->name('search');

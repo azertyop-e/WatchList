@@ -388,4 +388,81 @@ abstract class MediaController extends Controller
      * @return string Le nom de la variable (ex: 'moviesData', 'seriesData')
      */
     abstract protected function getDataVariableName(): string;
+
+    /**
+     * Récupère les films et séries sauvegardés non vus avec filtrage par genre
+     * 
+     * Cette méthode récupère tous les films et séries sauvegardés en base de données
+     * qui n'ont pas encore été marqués comme vus, avec possibilité de
+     * filtrer par genre. Elle récupère également la liste des genres
+     * disponibles pour le filtrage.
+     * 
+     * @param Request $request Contient le paramètre optionnel 'genre' pour le filtrage
+     * 
+     * @return \Illuminate\View\View Vue 'home' avec les films, séries et genres
+     */
+    public function getMediaStored(Request $request){
+        // Récupération des films non vus
+        $movieQuery = Movie::with('genders')->where('is_seen', false);
+        
+        // Récupération des séries non vues
+        $seriesQuery = Series::with('genders')->where('is_watched', false);
+        
+        if ($request->has('genre') && $request->input('genre') != '') {
+            $genreId = $request->input('genre');
+            
+            $movieQuery->whereHas('genders', function($q) use ($genreId) {
+                $q->where('gender.id', $genreId);
+            });
+            
+            $seriesQuery->whereHas('genders', function($q) use ($genreId) {
+                $q->where('gender.id', $genreId);
+            });
+        }
+        
+        $selectedType = $request->input('type', 'all');
+        
+        // Récupérer les données selon le type sélectionné
+        if ($selectedType === 'film') {
+            $movies = $movieQuery->orderBy('created_at', 'desc')->get();
+            $series = collect(); // Pas de séries
+        } elseif ($selectedType === 'serie') {
+            $movies = collect(); // Pas de films
+            $series = $seriesQuery->orderBy('created_at', 'desc')->get();
+        } else {
+            // Si 'all', on garde les deux
+            $movies = $movieQuery->orderBy('created_at', 'desc')->get();
+            $series = $seriesQuery->orderBy('created_at', 'desc')->get();
+        }
+        
+        // Récupérer les genres selon le type sélectionné
+        if ($selectedType === 'film') {
+            $genres = Gender::whereHas('movies', function($q) {
+                $q->where('is_seen', false);
+            })->orderBy('name')->get();
+        } elseif ($selectedType === 'serie') {
+            $genres = Gender::whereHas('series', function($q) {
+                $q->where('is_watched', false);
+            })->orderBy('name')->get();
+        } else {
+            // Si 'all', on combine les genres des deux types
+            $movieGenres = Gender::whereHas('movies', function($q) {
+                $q->where('is_seen', false);
+            })->get();
+            
+            $seriesGenres = Gender::whereHas('series', function($q) {
+                $q->where('is_watched', false);
+            })->get();
+            
+            $genres = $movieGenres->merge($seriesGenres)->unique('id')->sortBy('name');
+        }
+        
+        return view('home', [
+            'movies' => $movies,
+            'series' => $series,
+            'genres' => $genres,
+            'selectedGenre' => $request->input('genre', ''),
+            'selectedType' => $selectedType
+        ]);
+    }
 }

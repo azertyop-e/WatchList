@@ -18,46 +18,6 @@ use Illuminate\Support\Facades\Storage;
 
 class MovieController extends MediaController
 {
-
-
-    /**
-     * Récupère les films sauvegardés non vus avec filtrage par genre
-     * 
-     * Cette méthode récupère tous les films sauvegardés en base de données
-     * qui n'ont pas encore été marqués comme vus, avec possibilité de
-     * filtrer par genre. Elle récupère également la liste des genres
-     * disponibles pour le filtrage.
-     * 
-     * @param Request $request Contient le paramètre optionnel 'genre' pour le filtrage
-     * 
-     * @return \Illuminate\View\View Vue 'home' avec les films et genres
-     */
-    public function getMovieStored(Request $request){
-        $query = Movie::with('genders')->where('is_seen', false);
-        
-        if ($request->has('genre') && $request->input('genre') != '') {
-            $genreId = $request->input('genre');
-            $query->whereHas('genders', function($q) use ($genreId) {
-                $q->where('gender.id', $genreId);
-            });
-        }
-        
-        $selectedType = $request->input('type', 'film');
-        
-        $movies = $query->orderBy('created_at', 'desc')->get();
-        
-        $genres = Gender::whereHas('movies', function($q) {
-            $q->where('is_seen', false);
-        })->orderBy('name')->get();
-        
-        return view('home', [
-            'movies' => $movies,
-            'genres' => $genres,
-            'selectedGenre' => $request->input('genre', ''),
-            'selectedType' => $selectedType
-        ]);
-    }
-
     /**
      * Récupère les films sauvegardés marqués comme vus avec filtrage par genre
      * 

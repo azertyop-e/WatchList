@@ -13,4 +13,9 @@ class Gender extends Model
     {
         return $this->belongsToMany(Movie::class, 'gender_movie', 'gender_id', 'movie_id');
     }
+    
+    public function series()
+    {
+        return $this->belongsToMany(Series::class, 'series_genders', 'gender_id', 'series_id');
+    }
 }
