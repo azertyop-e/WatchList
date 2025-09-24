@@ -503,17 +503,251 @@ class SerieController extends MediaController
 
     /**
      * Récupère les détails d'une série
+     * 
+     * Cette méthode récupère les détails complets d'une série, soit depuis
+     * la base de données locale si elle est sauvegardée, soit depuis l'API TMDB.
+     * Elle inclut les genres, sociétés de production, pays, langues,
+     * réseaux, créateurs et casting.
+     * 
+     * @param int $id L'identifiant TMDB de la série
+     * 
+     * @return \Illuminate\View\View Vue 'series.detail' avec les détails de la série
+     * 
+     * @throws \Exception En cas d'erreur lors de l'appel à l'API TMDB
      */
     public function getMediaDetails(int $id)
     {
         $series = Series::with(['genders', 'productionCompanies', 'productionCountries', 'spokenLanguages', 'networks', 'creators', 'roles.actor', 'seasons.episodes'])
                         ->find($id);
         
-            if (!$series) {
-            abort(404, 'Série non trouvée');
+        if (!$series) {
+            // Récupération des données depuis l'API TMDB
+            $url = "/tv/".$id."?language=fr-FR&include_adult=false";
+            $seriesData = $this->getCurlData($url);
+            
+            $creditsUrl = "/tv/".$id."/credits?language=fr-FR";
+            $creditsData = $this->getCurlData($creditsUrl);
+            
+            if (isset($creditsData['cast']) && is_array($creditsData['cast'])) {
+                $seriesData['cast'] = array_slice($creditsData['cast'], 0, 20);
+            }
+            
+            // Récupération des détails des saisons avec épisodes
+            $seriesData = $this->loadSeasonsWithEpisodes($seriesData, $id);
+            
+            // Transformation des données pour qu'elles correspondent au format attendu par le template
+            $seriesData = $this->transformApiDataForTemplate($seriesData, $id);
+            
+            return view('series.detail', ['seriesData' => $seriesData]);
         }
 
-        return view('series.detail', ['seriesData' => $series]);
+        // Conversion des données de la base vers le format attendu par la vue
+        $seriesData = $series->toArray();
+        
+        $seriesData['genres'] = $series->genders->map(function($genre) {
+            return ['name' => $genre->name];
+        })->toArray();
+        
+        $seriesData['production_companies'] = $series->productionCompanies->map(function($company) {
+            return [
+                'name' => $company->name,
+                'logo_path' => $company->logo_path
+            ];
+        })->toArray();
+        
+        $seriesData['production_countries'] = $series->productionCountries->map(function($country) {
+            return ['name' => $country->name];
+        })->toArray();
+        
+        $seriesData['spoken_languages'] = $series->spokenLanguages->map(function($language) {
+            return [
+                'name' => $language->name,
+                'english_name' => $language->english_name
+            ];
+        })->toArray();
+        
+        $seriesData['networks'] = $series->networks->map(function($network) {
+            return [
+                'name' => $network->name,
+                'logo_path' => $network->logo_path
+            ];
+        })->toArray();
+        
+        $seriesData['created_by'] = $series->creators->map(function($creator) {
+            return [
+                'name' => $creator->name,
+                'profile_path' => $creator->profile_path
+            ];
+        })->toArray();
+        
+        // Ajout du casting depuis les rôles
+        $seriesData['cast'] = $series->roles->map(function($role) {
+            return [
+                'name' => $role->actor->name,
+                'character' => $role->character,
+                'profile_path' => $role->actor->profile_path,
+                'order' => $role->order
+            ];
+        })->sortBy('order')->values()->toArray();
+
+        // Transformation des données pour qu'elles correspondent au format attendu par le template
+        $seriesData = $this->transformDatabaseDataForTemplate($seriesData, $series);
+
+        return view('series.detail', ['seriesData' => $seriesData]);
+    }
+
+    /**
+     * Charge les détails des saisons avec leurs épisodes depuis l'API TMDB
+     * 
+     * @param array $seriesData Les données de base de la série
+     * @param int $tmdbId L'ID TMDB de la série
+     * 
+     * @return array Les données de la série avec les saisons et épisodes détaillés
+     */
+    private function loadSeasonsWithEpisodes(array $seriesData, int $tmdbId): array
+    {
+        if (!isset($seriesData['seasons']) || !is_array($seriesData['seasons'])) {
+            return $seriesData;
+        }
+        
+        $seasonsWithEpisodes = [];
+        
+        foreach ($seriesData['seasons'] as $season) {
+            $seasonNumber = $season['season_number'] ?? 0;
+            
+            // Ignorer la saison 0 (spéciales) et les saisons futures
+            if ($seasonNumber <= 0) {
+                continue;
+            }
+            
+            // Récupération des détails de la saison avec épisodes
+            $seasonUrl = "/tv/".$tmdbId."/season/".$seasonNumber."?language=fr-FR";
+            $seasonData = $this->getCurlData($seasonUrl);
+            
+            if ($seasonData && isset($seasonData['episodes'])) {
+                // Ajout des épisodes à la saison
+                $season['episodes'] = $seasonData['episodes'];
+                $seasonsWithEpisodes[] = $season;
+            } else {
+                // Si pas de détails, garder la saison de base
+                $seasonsWithEpisodes[] = $season;
+            }
+        }
+        
+        $seriesData['seasons'] = $seasonsWithEpisodes;
+        return $seriesData;
+    }
+
+    /**
+     * Transforme les données de la base de données pour qu'elles correspondent au format attendu par le template
+     * 
+     * @param array $seriesData Les données de la série depuis la base
+     * @param \App\Models\Series $series L'objet série Eloquent
+     * 
+     * @return mixed Les données transformées sous forme d'objet hybride
+     */
+    private function transformDatabaseDataForTemplate(array $seriesData, $series)
+    {
+        // Création d'un objet hybride qui peut être utilisé comme tableau ET comme objet
+        $hybridObject = new \ArrayObject($seriesData, \ArrayObject::ARRAY_AS_PROPS);
+        
+        // Ajout des saisons depuis la relation Eloquent
+        $hybridObject->seasons = $series->seasons;
+        
+        return $hybridObject;
+    }
+
+    /**
+     * Transforme les données de l'API TMDB pour qu'elles correspondent au format attendu par le template
+     * 
+     * @param array $apiData Les données de l'API TMDB
+     * @param int $tmdbId L'ID TMDB de la série
+     * 
+     * @return mixed Les données transformées sous forme d'objet hybride
+     */
+    private function transformApiDataForTemplate(array $apiData, int $tmdbId)
+    {
+        // Création d'un tableau qui peut aussi être utilisé comme objet
+        $transformedData = $apiData;
+        
+        // Ajout de l'ID TMDB
+        $transformedData['tmdb_id'] = $tmdbId;
+        
+        // Transformation des saisons pour qu'elles soient compatibles avec le template
+        if (isset($apiData['seasons']) && is_array($apiData['seasons'])) {
+            $seasons = collect($apiData['seasons'])->map(function($season) {
+                $seasonObject = new \stdClass();
+                $seasonObject->id = $season['id'] ?? null;
+                $seasonObject->name = $season['name'] ?? 'Saison ' . ($season['season_number'] ?? 0);
+                $seasonObject->season_number = $season['season_number'] ?? 0;
+                $seasonObject->episode_count = $season['episode_count'] ?? 0;
+                $seasonObject->overview = $season['overview'] ?? '';
+                $seasonObject->poster_path = $season['poster_path'] ?? null;
+                $seasonObject->air_date = $season['air_date'] ?? null;
+                
+                // Transformation des épisodes si disponibles
+                if (isset($season['episodes']) && is_array($season['episodes'])) {
+                    $episodes = collect($season['episodes'])->map(function($episode) {
+                        $episodeObject = new \stdClass();
+                        $episodeObject->id = $episode['id'] ?? null;
+                        $episodeObject->name = $episode['name'] ?? '';
+                        $episodeObject->episode_number = $episode['episode_number'] ?? 0;
+                        $episodeObject->overview = $episode['overview'] ?? '';
+                        $episodeObject->still_path = $episode['still_path'] ?? null;
+                        $episodeObject->air_date = $episode['air_date'] ?? null;
+                        $episodeObject->runtime = $episode['runtime'] ?? null;
+                        $episodeObject->vote_average = $episode['vote_average'] ?? 0;
+                        $episodeObject->vote_count = $episode['vote_count'] ?? 0;
+                        $episodeObject->is_watched = false; // Par défaut non vu
+                        return $episodeObject;
+                    });
+                    $seasonObject->episodes = $episodes;
+                } else {
+                    $seasonObject->episodes = collect([]);
+                }
+                
+                return $seasonObject;
+            });
+            
+            $transformedData['seasons'] = $seasons;
+        } else {
+            $transformedData['seasons'] = collect([]);
+        }
+        
+        // Transformation des genres
+        if (isset($apiData['genres']) && is_array($apiData['genres'])) {
+            $transformedData['genres'] = $apiData['genres'];
+        }
+        
+        // Transformation des sociétés de production
+        if (isset($apiData['production_companies']) && is_array($apiData['production_companies'])) {
+            $transformedData['production_companies'] = $apiData['production_companies'];
+        }
+        
+        // Transformation des pays de production
+        if (isset($apiData['production_countries']) && is_array($apiData['production_countries'])) {
+            $transformedData['production_countries'] = $apiData['production_countries'];
+        }
+        
+        // Transformation des langues parlées
+        if (isset($apiData['spoken_languages']) && is_array($apiData['spoken_languages'])) {
+            $transformedData['spoken_languages'] = $apiData['spoken_languages'];
+        }
+        
+        // Transformation des réseaux
+        if (isset($apiData['networks']) && is_array($apiData['networks'])) {
+            $transformedData['networks'] = $apiData['networks'];
+        }
+        
+        // Transformation des créateurs
+        if (isset($apiData['created_by']) && is_array($apiData['created_by'])) {
+            $transformedData['created_by'] = $apiData['created_by'];
+        }
+        
+        // Création d'un objet hybride qui peut être utilisé comme tableau ET comme objet
+        $hybridObject = new \ArrayObject($transformedData, \ArrayObject::ARRAY_AS_PROPS);
+        
+        return $hybridObject;
     }
 
     /**
