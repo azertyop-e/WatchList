@@ -19,6 +19,39 @@ use Illuminate\Support\Facades\Storage;
 class MovieController extends MediaController
 {
     /**
+     * Récupère tous les médias vus (films et séries) pour la page /seen
+     * 
+     * @param Request $request
+     * @return \Illuminate\View\View Vue 'seen' avec tous les médias vus
+     */
+    public function getAllSeenMedia(Request $request)
+    {
+        // Récupération des films vus
+        $movies = Movie::with('genders')->where('is_seen', true)->orderBy('updated_at', 'desc')->get();
+        
+        // Récupération des séries vues
+        $series = Series::with('genders')->where('is_watched', true)->orderBy('updated_at', 'desc')->get();
+        
+        // Ajout du type de média à chaque élément
+        $movies->each(function($movie) {
+            $movie->media_type = 'movie';
+        });
+        
+        $series->each(function($serie) {
+            $serie->media_type = 'series';
+        });
+        
+        // Fusion et tri des médias
+        $allMedia = $movies->concat($series)->sortByDesc('updated_at');
+        
+        return view('seen', [
+            'allMedia' => $allMedia,
+            'movies' => $movies,
+            'series' => $series
+        ]);
+    }
+
+    /**
      * Récupère les films sauvegardés marqués comme vus avec filtrage par genre
      * 
      * Cette méthode récupère tous les films sauvegardés en base de données

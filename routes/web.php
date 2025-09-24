@@ -5,6 +5,7 @@ use App\Http\Controllers\MovieController;
 use App\Http\Controllers\SerieController;
 
 Route::get('/', [MovieController::class, 'getMediaStored'])->name('home');
+Route::get('/seen', [MovieController::class, 'getAllSeenMedia'])->name('seen');
 
 Route::controller(MovieController::class)->prefix('movie')->name('movie.')->group(function () {
     Route::get('/popular', 'getPopular')->name('popular');

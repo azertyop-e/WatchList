@@ -14,14 +14,8 @@
             </div>
         @endif
         
-        <!-- Badge du type de média -->
-        <div class="absolute top-3 left-3 z-10">
-            <span class="bg-{{ $mediaType === 'tv' ? 'green' : 'blue' }}-600 text-white text-xs px-2 py-1 rounded-full font-medium shadow-lg">
-                {{ $getMediaTypeLabel() }}
-            </span>
-        </div>
         
-        @if($isObject && isset($media) && $media->id)
+        @if($isObject && isset($media) && $media->id && !$showMarkUnseenButton)
         <form action="{{ $getMarkSeenRoute() }}" method="POST" class="absolute top-3 right-3 z-10">
             @csrf
             <input type="hidden" name="{{ $mediaType === 'tv' ? 'series_id' : 'movie_id' }}" value="{{ $media->id }}">
@@ -69,7 +63,16 @@
         </div>
 
         <div class="mt-4 space-y-3">
-            @if($showSaveButton)
+            @if($showMarkUnseenButton)
+            <form action="{{ $getMarkUnseenRoute() }}" method="POST">
+                @csrf
+                <input type="hidden" name="{{ $mediaType === 'tv' ? 'series_id' : 'movie_id' }}" value="{{ $id }}">
+                <button type="submit" 
+                        class="w-full border border-gray-600 text-gray-600 font-semibold py-2 mb-2 px-4 rounded-lg transition-colors duration-200 hover:bg-gray-50 flex items-center justify-center">
+                    Marquer comme non {{ $mediaType === 'tv' ? 'vue' : 'vu' }}
+                </button>
+            </form>
+            @elseif($showSaveButton)
             <form action="{{ $getSaveRoute() }}" method="POST">
                 @csrf
                 <input type="hidden" name="{{ $mediaType === 'tv' ? 'series_id' : 'movie_id' }}" value="{{ $id }}">

@@ -8,6 +8,7 @@ class MediaCard extends Component
 {
     public $media;
     public $showSaveButton;
+    public $showMarkUnseenButton;
     public $title;
     public $posterPath;
     public $voteAverage;
@@ -19,7 +20,7 @@ class MediaCard extends Component
     public $mediaType;
     public $firstAirDate;
 
-    public function __construct($media, $showSaveButton = true)
+    public function __construct($media, $showSaveButton = true, $showMarkUnseenButton = false)
     {
         $this->media = $media;
         $this->isObject = is_object($media);
@@ -28,7 +29,8 @@ class MediaCard extends Component
             $this->mediaType = get_class($media) === 'App\Models\Series' ? 'tv' : 'movie';
         } else {
             if (isset($media['media_type'])) {
-                $this->mediaType = $media['media_type'];
+                // Normaliser 'series' vers 'tv' pour la cohérence
+                $this->mediaType = $media['media_type'] === 'series' ? 'tv' : $media['media_type'];
             } elseif (isset($media['name']) && !isset($media['title'])) {
                 $this->mediaType = 'tv';
             } elseif (isset($media['first_air_date']) && !isset($media['release_date'])) {
@@ -39,6 +41,7 @@ class MediaCard extends Component
         }
         
         $this->showSaveButton = $showSaveButton;
+        $this->showMarkUnseenButton = $showMarkUnseenButton;
         
         if ($this->mediaType === 'tv') {
             $this->title = $this->isObject ? $media->name : ($media['name'] ?? '');
@@ -83,6 +86,14 @@ class MediaCard extends Component
             return route('series.mark-seen');
         }
         return route('movie.mark-seen');
+    }
+
+    public function getMarkUnseenRoute()
+    {
+        if ($this->mediaType === 'tv') {
+            return route('series.mark-unseen');
+        }
+        return route('movie.mark-unseen');
     }
 
     public function getMediaTypeLabel()
