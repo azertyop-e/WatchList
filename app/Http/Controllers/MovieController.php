@@ -15,6 +15,7 @@ use App\Models\MovieRole;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class MovieController extends MediaController
 {
@@ -279,41 +280,14 @@ class MovieController extends MediaController
             }
 
             if (isset($creditsData['cast']) && is_array($creditsData['cast'])) {
-                foreach ($creditsData['cast'] as $index => $castMember) {
-                    if ($index >= 20) break;
-                    
-                    $actor = Actor::firstOrCreate(
-                        ['tmdb_id' => $castMember['id']],
-                        [
-                            'name' => $castMember['name'],
-                            'profile_path' => $castMember['profile_path'] ?? null,
-                            'popularity' => $castMember['popularity'] ?? null
-                        ]
-                    );
-                    
-                    if (isset($castMember['profile_path']) && $castMember['profile_path']) {
-                        $profilePath = "profile/" . $castMember['profile_path'];
-                        $localPath = Storage::disk('public')->path($profilePath);
-                        
-                        if (!Storage::disk('public')->exists($profilePath)) {
-                            try {
-                                $response = Http::get("https://image.tmdb.org/t/p/w185" . $castMember['profile_path']);
-                                if ($response->successful()) {
-                                    Storage::disk('public')->put($profilePath, $response->body());
-                                }
-                            } catch (\Exception $e) {
-                                \Log::warning("Erreur lors du téléchargement de l'image de profil pour l'acteur {$actor->name}: " . $e->getMessage());
-                            }
-                        }
-                    }
-                    
+                $this->saveMediaCast($creditsData['cast'], function($actor, $actorData) use ($movie) {
                     MovieRole::create([
                         'movie_id' => $movie->id,
                         'actor_id' => $actor->id,
-                        'character_name' => $castMember['character'] ?? 'Inconnu',
-                        'order' => $index + 1
+                        'character_name' => $actorData['character'] ?? 'Inconnu',
+                        'order' => $actorData['order'] ?? 0
                     ]);
-                }
+                });
             }
 
             if (isset($movieData['poster_path'])) {

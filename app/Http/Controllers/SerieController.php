@@ -397,6 +397,7 @@ class SerieController extends MediaController
     /**
      * Version interne de saveSeasonEpisodes qui retourne un tableau au lieu d'une redirection
      */
+    //? À revoir
     private function saveSeasonEpisodesInternal(int $seriesId, int $seasonNumber): array
     {
         try {
@@ -584,7 +585,7 @@ class SerieController extends MediaController
         $seriesData['cast'] = $series->roles->map(function($role) {
             return [
                 'name' => $role->actor->name,
-                'character' => $role->character,
+                'character' => $role->character_name,
                 'profile_path' => $role->actor->profile_path,
                 'order' => $role->order
             ];
@@ -665,6 +666,7 @@ class SerieController extends MediaController
      * 
      * @return mixed Les données transformées sous forme d'objet hybride
      */
+    //? A revoir
     private function transformApiDataForTemplate(array $apiData, int $tmdbId)
     {
         // Création d'un tableau qui peut aussi être utilisé comme objet
@@ -763,7 +765,7 @@ class SerieController extends MediaController
 
             $season = Season::where('series_id', $series->id)
                            ->where('season_number', $seasonNumber)
-                       ->with('episodes')
+                           ->with('episodes')
                            ->first();
 
             if (!$season) {
@@ -920,25 +922,16 @@ class SerieController extends MediaController
 
     private function saveSeriesCast(Series $series, array $cast): void
     {
-        foreach ($cast as $actorData) {
-            $actor = Actor::firstOrCreate(
-                ['tmdb_id' => $actorData['id']],
-                [
-                    'name' => $actorData['name'],
-                    'profile_path' => $actorData['profile_path'] ?? null,
-                    'gender' => $actorData['gender'] ?? null,
-                    'known_for_department' => $actorData['known_for_department'] ?? null,
-                    'popularity' => $actorData['popularity'] ?? null
-                ]
-            );
-
+        $series->roles()->delete();
+        
+        $this->saveMediaCast($cast, function($actor, $actorData) use ($series) {
             SeriesRole::create([
                 'series_id' => $series->id,
                 'actor_id' => $actor->id,
                 'character_name' => $actorData['character'] ?? null,
                 'order' => $actorData['order'] ?? 0
             ]);
-        }
+        });
     }
 
     private function downloadSeriesPoster(Series $series, ?string $posterPath): void
@@ -956,6 +949,47 @@ class SerieController extends MediaController
                 ]);
             }
         }
+    }
+
+
+    /**
+     * Force le téléchargement des photos de profil pour tous les acteurs d'une série
+     * 
+     * @param int $id L'ID de la série
+     * 
+     * @return \Illuminate\Http\JsonResponse Résultat du téléchargement
+     */
+    public function downloadCastPhotos(int $id)
+    {
+        $series = Series::with(['roles.actor'])->findOrFail($id);
+        
+        $downloaded = 0;
+        $errors = 0;
+        $alreadyExists = 0;
+        
+        foreach ($series->roles as $role) {
+            if ($role->actor->profile_path) {
+                $path = "profile/" . $role->actor->profile_path;
+                
+                if (Storage::disk('public')->exists($path)) {
+                    $alreadyExists++;
+                } else {
+                    if ($this->downloadActorProfile($role->actor, $role->actor->profile_path)) {
+                        $downloaded++;
+                    } else {
+                        $errors++;
+                    }
+                }
+            }
+        }
+        
+        return response()->json([
+            'series_name' => $series->name,
+            'total_actors' => $series->roles->count(),
+            'downloaded' => $downloaded,
+            'already_exists' => $alreadyExists,
+            'errors' => $errors
+        ]);
     }
 
     private function createOrUpdateSeason(Series $series, array $seasonData, int $seasonNumber): Season

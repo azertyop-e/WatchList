@@ -15,9 +15,12 @@ use App\Models\MovieRole;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 abstract class MediaController extends Controller
 {
+    protected const DEFAULT_MAX_CAST_SIZE = 20;
+
     /**
      * Récupère et affiche les médias populaires avec pagination
      * 
@@ -464,5 +467,90 @@ abstract class MediaController extends Controller
             'selectedGenre' => $request->input('genre', ''),
             'selectedType' => $selectedType
         ]);
+    }
+
+    /**
+     * Sauvegarde le casting d'un média avec téléchargement des photos de profil
+     * 
+     * Cette méthode optimisée sauvegarde le casting d'un média en créant
+     * les acteurs avec seulement les informations nécessaires, télécharge
+     * leurs photos de profil et crée leurs rôles associés.
+     * 
+     * @param array $cast Les données du casting depuis l'API TMDB
+     * @param callable $createRoleCallback Fonction pour créer le rôle (film ou série)
+     * @param int|null $maxCastSize Nombre maximum d'acteurs à sauvegarder (défaut: DEFAULT_MAX_CAST_SIZE)
+     * 
+     * @return void
+     */
+    protected function saveMediaCast(array $cast, callable $createRoleCallback, ?int $maxCastSize = null): void
+    {
+        $cast = array_slice($cast, 0, $maxCastSize ?? self::DEFAULT_MAX_CAST_SIZE);
+        
+        foreach ($cast as $actorData) {
+            if (!isset($actorData['id']) || !isset($actorData['name'])) {
+                continue;
+            }
+            
+            $actor = Actor::firstOrCreate(
+                ['tmdb_id' => $actorData['id']],
+                [
+                    'name' => $actorData['name'],
+                    'profile_path' => $actorData['profile_path'] ?? null,
+                    'known_for_department' => $actorData['known_for_department'] ?? null,
+                    'popularity' => $actorData['popularity'] ?? null
+                ]
+            );
+
+            if (isset($actorData['profile_path']) && $actorData['profile_path']) {
+                $this->downloadActorProfile($actor, $actorData['profile_path']);
+            }
+
+            $createRoleCallback($actor, $actorData);
+        }
+    }
+
+    /**
+     * Télécharge et stocke la photo de profil d'un acteur (méthode publique)
+     * 
+     * @param Actor $actor L'acteur dont on veut télécharger la photo
+     * @param string $profilePath Le chemin de la photo de profil depuis TMDB
+     * 
+     * @return bool True si le téléchargement a réussi, false sinon
+     */
+    protected function downloadActorProfile(Actor $actor, string $profilePath): bool
+    {
+        try {
+            $path = "profile/" . $profilePath;
+            
+            if (Storage::disk('public')->exists($path)) {
+                return true;
+            }
+            
+            $response = Http::get("https://image.tmdb.org/t/p/w185" . $profilePath);
+            
+            if ($response->successful()) {
+                Storage::disk('public')->put($path, $response->body());
+                Log::info("Photo de profil téléchargée pour l'acteur {$actor->name}", [
+                    'actor_id' => $actor->id,
+                    'profile_path' => $profilePath
+                ]);
+                return true;
+            } else {
+                Log::warning("Échec du téléchargement de la photo de profil", [
+                    'actor_id' => $actor->id,
+                    'profile_path' => $profilePath,
+                    'status_code' => $response->status()
+                ]);
+                return false;
+            }
+        } catch (\Exception $e) {
+            Log::warning('Impossible de télécharger la photo de profil de l\'acteur', [
+                'actor_id' => $actor->id,
+                'actor_name' => $actor->name,
+                'profile_path' => $profilePath,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
     }
 }
