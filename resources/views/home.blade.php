@@ -38,12 +38,9 @@
             <p class="text-gray-600 mb-8">
                 Découvrez nos films et séries et ajoutez-les à votre liste pour ne pas les oublier.
             </p>
-            <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="{{ route('movie.popular') }}" class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200">
-                    Découvrir les films populaires
-                </a>
-                <a href="{{ route('series.popular') }}" class="inline-flex items-center px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors duration-200">
-                    Découvrir les séries populaires
+            <div class="flex sm:flex-row gap-4 justify-center">
+                <a href="{{ route('popular') }}" class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200">
+                    Découvrir les films et séries populaires
                 </a>
             </div>
         </div>
