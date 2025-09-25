@@ -17,7 +17,7 @@
                                     <span class="text-sm font-bold">#{{ $index + 1 }}</span>
                                 </div>
                             @endif
-                            <x-movie-card :movie="$movie" :showSaveButton="$showSaveButtons" />
+                            <x-media-card :media="$movie" :showSaveButton="$showSaveButtons" />
                         </div>
                     @endforeach
                 </div>
