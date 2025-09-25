@@ -29,7 +29,7 @@
                                     alt="{{ $movie->title }}" 
                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
                         @else
-                            <div class="text-white text-6xl opacity-50">🎬</div>
+                            <div class="text-white text-6xl opacity-50"></div>
                         @endif
                     </div>
 
@@ -41,7 +41,7 @@
                             
                             @if(isset($movie->release_date) && $movie->release_date)
                                 <p class="text-sm text-gray-500 mb-3">
-                                    📅 {{ \Carbon\Carbon::parse($movie->release_date)->format('Y') }}
+                                    {{ \Carbon\Carbon::parse($movie->release_date)->format('Y') }}
                                 </p>
                             @endif
 

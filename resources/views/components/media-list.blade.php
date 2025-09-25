@@ -35,7 +35,6 @@
                 @endif
             @else
                 <div class="text-center py-12 bg-gray-50 rounded-lg">
-                    <div class="text-6xl mb-4 opacity-50">🎬</div>
                     <p class="text-gray-500 text-lg">Aucun film trouvé</p>
                     <p class="text-gray-400 text-sm mt-2">Les films apparaîtront ici une fois ajoutés</p>
                 </div>
@@ -78,7 +77,6 @@
                 @endif
             @else
                 <div class="text-center py-12 bg-gray-50 rounded-lg">
-                    <div class="text-6xl mb-4 opacity-50">📺</div>
                     <p class="text-gray-500 text-lg">Aucune série trouvée</p>
                     <p class="text-gray-400 text-sm mt-2">Les séries apparaîtront ici une fois ajoutées</p>
                 </div>

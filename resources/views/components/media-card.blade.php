@@ -4,14 +4,6 @@
             <img src="{{ \App\Helpers\ImageHelper::getPosterUrl($posterPath) }}" 
                 alt="{{ $title }}" 
                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
-        @else
-            <div class="text-white text-6xl opacity-50">
-                @if($mediaType === 'tv')
-                    📺
-                @else
-                    🎬
-                @endif
-            </div>
         @endif
         
         
@@ -41,7 +33,7 @@
             
             @if(isset($releaseDate) && $releaseDate)
                 <p class="text-sm text-gray-500 mb-3">
-                    📅 {{ \Carbon\Carbon::parse($releaseDate)->format('Y') }}
+                    {{ \Carbon\Carbon::parse($releaseDate)->format('Y') }}
                 </p>
             @endif
 
