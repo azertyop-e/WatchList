@@ -553,4 +553,54 @@ abstract class MediaController extends Controller
             return false;
         }
     }
+
+    //? A revoir
+    /**
+     * Récupère les films et séries populaires
+     * 
+     * @param Request $request
+     * @return \Illuminate\View\View Vue avec les films et séries populaires
+     */
+    public function getPopularList(Request $request)
+    {
+        $page = $request->get('page', 1);
+        $perPage = $request->get('per_page', 10);
+        
+        // Limiter à 5 pages maximum
+        if ($page > 5) {
+            $page = 5;
+        }
+        if ($page < 1) {
+            $page = 1;
+        }
+
+        // Récupération des films populaires
+        $moviesUrl = "/movie/popular?language=fr-FR&include_adult=false&page=" . $page;
+        $moviesData = $this->getCurlData($moviesUrl);
+        $moviesData = $this->addSavedStatusToMedia($moviesData);
+
+        // Récupération des séries populaires
+        $seriesUrl = "/tv/popular?language=fr-FR&include_adult=false&page=" . $page;
+        $seriesData = $this->getCurlData($seriesUrl);
+        $seriesData = $this->addSavedStatusToMedia($seriesData);
+
+        $totalResults = max($moviesData['total_results'] ?? 0, $seriesData['total_results'] ?? 0);
+        $totalPages = min(max($moviesData['total_pages'] ?? 5, $seriesData['total_pages'] ?? 5), 5);
+        $itemsPerPage = 10;
+        $startItem = ($page - 1) * $itemsPerPage + 1;
+        $endItem = min($page * $itemsPerPage, $totalResults);
+
+        $viewData = [
+            'moviesData' => $moviesData,
+            'seriesData' => $seriesData,
+            'currentPage' => $page,
+            'totalPages' => $totalPages,
+            'perPage' => $perPage,
+            'totalResults' => $totalResults,
+            'startItem' => $startItem,
+            'endItem' => $endItem,
+        ];
+
+        return view('media.popular', $viewData);
+    }
 }

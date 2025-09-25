@@ -22,35 +22,13 @@
             />
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            @foreach ($movies as $movie)
-                <x-media-card 
-                    :media="$movie"
-                    :mediaType="'movie'"
-                    :title="$movie->title"
-                    :posterPath="$movie->poster_path"
-                    :releaseDate="$movie->release_date"
-                    :voteAverage="$movie->vote_average"
-                    :id="$movie->id"
-                    :isObject="true"
-                    :showSaveButton="false"
-                />
-            @endforeach
-            
-            @foreach ($series as $serie)
-                <x-media-card 
-                    :media="$serie"
-                    :mediaType="'tv'"
-                    :title="$serie->name"
-                    :posterPath="$serie->poster_path"
-                    :releaseDate="$serie->first_air_date"
-                    :voteAverage="$serie->vote_average"
-                    :id="$serie->id"
-                    :isObject="true"
-                    :showSaveButton="false"
-                />
-            @endforeach
-        </div>
+        <x-media-list 
+            :movies="$movies" 
+            :series="$series" 
+            moviesTitle="Mes Films" 
+            seriesTitle="Mes Séries" 
+            :showSaveButtons="false" 
+        />
     </div>
     @else
         <div class="text-center py-16">

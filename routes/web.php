@@ -6,9 +6,9 @@ use App\Http\Controllers\SerieController;
 
 Route::get('/', [MovieController::class, 'getMediaStored'])->name('home');
 Route::get('/seen', [MovieController::class, 'getAllSeenMedia'])->name('seen');
+Route::get('/popular', [MovieController::class, 'getPopularList'])->name('popular');
 
 Route::controller(MovieController::class)->prefix('movie')->name('movie.')->group(function () {
-    Route::get('/popular', 'getPopular')->name('popular');
     Route::get('/top', 'getTop')->name('top');
     Route::get('/search', 'getSearch')->name('search');
     Route::get('/seen', 'getSeenMovies')->name('seen');
@@ -20,7 +20,6 @@ Route::controller(MovieController::class)->prefix('movie')->name('movie.')->grou
 });
 
 Route::controller(SerieController::class)->prefix('series')->name('series.')->group(function () {
-    Route::get('/popular', 'getPopular')->name('popular');
     Route::get('/top', 'getTop')->name('top');
     Route::get('/search', 'getSearch')->name('search');
     Route::get('/seen', 'getSeenMedia')->name('seen');

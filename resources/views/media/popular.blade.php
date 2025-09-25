@@ -4,15 +4,15 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="text-center mb-12">
         <h1 class="text-4xl font-bold text-gray-900 mb-4">
-            Séries Populaires
+            Films et Séries Populaires
         </h1>
 
         @if(session('success'))
             <x-toast type="success" message="{{ session('success') }}" />
         @endif
 
-        <p class="text-xl text-gray-600 max-w-2xl mx-auto">
-            Découvrez les séries les plus populaires du moment, sélectionnées pour vous
+        <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+            Découvrez les films et séries les plus populaires du moment, organisés en deux colonnes pour une meilleure expérience de navigation
         </p>
     </div>
 
@@ -20,18 +20,25 @@
         <x-search-bar />
     </div>
 
-    @if(isset($seriesData['results']) && count($seriesData['results']) > 0)
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            @foreach ($seriesData['results'] as $series)
-                <x-media-card :media="$series" :showSaveButton="true" />
-            @endforeach
-        </div>
+    @if((isset($moviesData['results']) && count($moviesData['results']) > 0) || (isset($seriesData['results']) && count($seriesData['results']) > 0))
+        <!-- Utilisation du composant MediaList -->
+        <x-media-list 
+            :movies="collect($moviesData['results'] ?? [])" 
+            :series="collect($seriesData['results'] ?? [])" 
+            moviesTitle="Films Populaires" 
+            seriesTitle="Séries Populaires" 
+            :showSaveButtons="true" 
+        />
 
         <!-- Pagination -->
         <div class="mt-8 mb-4 flex flex-col lg:flex-row justify-between items-center space-y-4 lg:space-y-0">
+            <div class="text-sm text-gray-600">
+                Affichage de {{ $startItem }} à {{ $endItem }} sur {{ $totalResults }} résultats
+            </div>
+            
             <nav aria-label="Pagination" class="flex justify-center items-center text-gray-600">
                 @if($currentPage > 1)
-                    <a href="{{ route('series.popular', ['page' => $currentPage - 1, 'per_page' => $perPage]) }}" 
+                    <a href="{{ route('popular', ['page' => $currentPage - 1, 'per_page' => $perPage]) }}" 
                         class="p-2 mr-4 rounded hover:bg-gray-100 transition-colors duration-200"
                         aria-label="Page précédente">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -57,7 +64,7 @@
                      @if($currentPage == 1)
                          <span class="px-4 py-2 rounded bg-gray-200 text-gray-900 font-medium cursor-default">1</span>
                      @else
-                         <a href="{{ route('series.popular', ['page' => 1, 'per_page' => $perPage]) }}" 
+                         <a href="{{ route('popular', ['page' => 1, 'per_page' => $perPage]) }}" 
                              class="px-4 py-2 rounded hover:bg-gray-100 transition-colors duration-200">1</a>
                      @endif
                  @endif
@@ -67,7 +74,7 @@
                  @endif
 
                  @if($showPrevious)
-                     <a href="{{ route('series.popular', ['page' => $currentPage - 1, 'per_page' => $perPage]) }}" 
+                     <a href="{{ route('popular', ['page' => $currentPage - 1, 'per_page' => $perPage]) }}" 
                          class="px-4 py-2 rounded hover:bg-gray-100 transition-colors duration-200">{{ $currentPage - 1 }}</a>
                  @endif
 
@@ -76,7 +83,7 @@
                  @endif
 
                  @if($showNext)
-                     <a href="{{ route('series.popular', ['page' => $currentPage + 1, 'per_page' => $perPage]) }}" 
+                     <a href="{{ route('popular', ['page' => $currentPage + 1, 'per_page' => $perPage]) }}" 
                          class="px-4 py-2 rounded hover:bg-gray-100 transition-colors duration-200">{{ $currentPage + 1 }}</a>
                  @endif
 
@@ -88,13 +95,13 @@
                      @if($currentPage == $totalPages)
                          <span class="px-4 py-2 rounded bg-gray-200 text-gray-900 font-medium cursor-default">{{ $totalPages }}</span>
                      @else
-                         <a href="{{ route('series.popular', ['page' => $totalPages, 'per_page' => $perPage]) }}" 
+                         <a href="{{ route('popular', ['page' => $totalPages, 'per_page' => $perPage]) }}" 
                              class="px-4 py-2 rounded hover:bg-gray-100 transition-colors duration-200">{{ $totalPages }}</a>
                      @endif
                  @endif
 
                 @if($currentPage < $totalPages)
-                    <a href="{{ route('series.popular', ['page' => $currentPage + 1, 'per_page' => $perPage]) }}" 
+                    <a href="{{ route('popular', ['page' => $currentPage + 1, 'per_page' => $perPage]) }}" 
                         class="p-2 ml-4 rounded hover:bg-gray-100 transition-colors duration-200"
                         aria-label="Page suivante">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -113,14 +120,16 @@
     @else
         <div class="text-center py-16">
             <h3 class="text-2xl font-bold text-gray-900 mb-2">
-                Aucune série trouvée
+                Aucun contenu trouvé
             </h3>
             <p class="text-gray-600 mb-8">
-                Nous n'avons trouvé aucune série populaire pour le moment.
+                Nous n'avons trouvé aucun film ou série populaire pour le moment.
             </p>
-            <a href="{{ route('home') }}" class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200">
-                Retour à l'accueil
-            </a>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="{{ route('home') }}" class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200">
+                    Retour à l'accueil
+                </a>
+            </div>
         </div>
     @endif
 </div>
