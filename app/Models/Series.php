@@ -189,4 +189,58 @@ class Series extends Model
     {
         return $query->where('is_watched', false);
     }
+
+    /**
+     * Accessor pour obtenir le prochain épisode à regarder
+     * Basé sur l'épisode le plus avancé dans la progression de l'utilisateur
+     */
+    public function getNextEpisodeToWatch()
+    {
+        $allEpisodes = $this->seasons()
+            ->with('episodes')
+            ->get()
+            ->pluck('episodes')
+            ->flatten()
+            ->sortBy(function($episode) {
+                // Trier par saison puis par numéro d'épisode
+                $season = $episode->season;
+                return ($season->season_number * 1000) + $episode->episode_number;
+            });
+
+        // Trouver le dernier épisode regardé
+        $lastWatchedEpisode = $allEpisodes
+            ->where('is_watched', true)
+            ->sortByDesc(function($episode) {
+                $season = $episode->season;
+                return ($season->season_number * 1000) + $episode->episode_number;
+            })
+            ->first();
+
+        if (!$lastWatchedEpisode) {
+            // Si aucun épisode n'a été regardé, retourner le premier épisode
+            return $allEpisodes->first();
+        }
+
+        // Trouver l'épisode suivant
+        $lastWatchedSeason = $lastWatchedEpisode->season->season_number;
+        $lastWatchedEpisodeNumber = $lastWatchedEpisode->episode_number;
+
+        // Chercher l'épisode suivant dans la même saison
+        $nextEpisode = $allEpisodes
+            ->where('season.season_number', $lastWatchedSeason)
+            ->where('episode_number', '>', $lastWatchedEpisodeNumber)
+            ->first();
+
+        if ($nextEpisode) {
+            return $nextEpisode;
+        }
+
+        // Si pas d'épisode suivant dans la même saison, chercher le premier épisode de la saison suivante
+        $nextSeason = $lastWatchedSeason + 1;
+        $nextEpisode = $allEpisodes
+            ->where('season.season_number', $nextSeason)
+            ->first();
+
+        return $nextEpisode;
+    }
 }

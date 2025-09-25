@@ -250,13 +250,14 @@ class SerieController extends MediaController
     /**
      * Sauvegarde toutes les saisons d'une série avec leurs épisodes
      */
+    //? À revoir
     public function saveAllSeasons(int $seriesTmdbId, bool $includeSpecials = false, int $maxSeasons = 20, bool $returnResponse = true)
     {
         try {
             $series = Series::where('tmdb_id', $seriesTmdbId)->first();
             if (!$series) {
                 if ($returnResponse) {
-                return redirect()->back()->with('error', 'Série non trouvée en base de données.');
+                    return redirect()->back()->with('error', 'Série non trouvée en base de données.');
                 }
                 throw new \Exception('Série non trouvée en base de données.');
             }
@@ -266,7 +267,7 @@ class SerieController extends MediaController
 
             if (!$seriesData || !isset($seriesData['seasons']) || !is_array($seriesData['seasons'])) {
                 if ($returnResponse) {
-                return redirect()->back()->with('error', 'Impossible de récupérer les données de la série depuis l\'API TMDB.');
+                    return redirect()->back()->with('error', 'Impossible de récupérer les données de la série depuis l\'API TMDB.');
                 }
                 throw new \Exception('Impossible de récupérer les données de la série depuis l\'API TMDB.');
             }
@@ -285,7 +286,7 @@ class SerieController extends MediaController
 
             if ($seasonsToProcess->isEmpty()) {
                 if ($returnResponse) {
-                return redirect()->back()->with('warning', 'Aucune saison valide trouvée pour cette série.');
+                    return redirect()->back()->with('warning', 'Aucune saison valide trouvée pour cette série.');
                 }
                 return; // Pas d'erreur, juste aucune saison à traiter
             }
@@ -346,6 +347,7 @@ class SerieController extends MediaController
     /**
      * Sauvegarde une saison complète d'une série
      */
+    //? À revoir
     public function saveSeason(int $seriesTmdbId, int $seasonNumber)
     {
         return $this->saveSeasonEpisodes($seriesTmdbId, $seasonNumber);
@@ -354,6 +356,7 @@ class SerieController extends MediaController
     /**
      * Enregistre les épisodes d'une saison donnée d'une série depuis l'API TMDB
      */
+    //? À revoir
     public function saveSeasonEpisodes(int $seriesId, int $seasonNumber)
     {
         try {
@@ -533,11 +536,10 @@ class SerieController extends MediaController
                 $seriesData['cast'] = array_slice($creditsData['cast'], 0, 20);
             }
             
-            // Récupération des détails des saisons avec épisodes
             $seriesData = $this->loadSeasonsWithEpisodes($seriesData, $id);
-            
-            // Transformation des données pour qu'elles correspondent au format attendu par le template
             $seriesData = $this->transformApiDataForTemplate($seriesData, $id);
+            
+            $seriesData['is_saved'] = false;
             
             return view('series.detail', ['seriesData' => $seriesData]);
         }
@@ -590,6 +592,15 @@ class SerieController extends MediaController
                 'order' => $role->order
             ];
         })->sortBy('order')->values()->toArray();
+
+        // Récupération du prochain épisode à regarder
+        $nextEpisodeToWatch = $series->getNextEpisodeToWatch();
+        if ($nextEpisodeToWatch) {
+            $seriesData['next_episode_to_watch'] = $nextEpisodeToWatch;
+        }
+
+        // Ajout de l'information que la série est enregistrée
+        $seriesData['is_saved'] = true;
 
         // Transformation des données pour qu'elles correspondent au format attendu par le template
         $seriesData = $this->transformDatabaseDataForTemplate($seriesData, $series);
@@ -744,6 +755,14 @@ class SerieController extends MediaController
         // Transformation des créateurs
         if (isset($apiData['created_by']) && is_array($apiData['created_by'])) {
             $transformedData['created_by'] = $apiData['created_by'];
+        }
+        
+        // Pour les séries non sauvegardées, le prochain épisode est le premier épisode de la première saison
+        if (isset($transformedData['seasons']) && $transformedData['seasons']->isNotEmpty()) {
+            $firstSeason = $transformedData['seasons']->first();
+            if ($firstSeason && isset($firstSeason->episodes) && $firstSeason->episodes->isNotEmpty()) {
+                $transformedData['next_episode_to_watch'] = $firstSeason->episodes->first();
+            }
         }
         
         // Création d'un objet hybride qui peut être utilisé comme tableau ET comme objet

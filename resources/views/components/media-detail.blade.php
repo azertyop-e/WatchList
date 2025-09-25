@@ -129,6 +129,20 @@
                                 <span class="ml-2 text-gray-600">{{ $mediaData['number_of_episodes'] }}</span>
                             </div>
                         @endif
+
+                        @if($mediaType === 'series' && isset($mediaData['next_episode_to_watch']) && $mediaData['next_episode_to_watch'] && isset($mediaData['is_saved']) && $mediaData['is_saved'])
+                            <div>
+                                <span class="text-sm font-semibold text-gray-700">Prochain épisode :</span>
+                                <span class="ml-2 text-gray-600">
+                                    @if(isset($mediaData['next_episode_to_watch']->season))
+                                        S{{ $mediaData['next_episode_to_watch']->season->season_number ?? 'N/A' }}
+                                    @else
+                                        S{{ $mediaData['next_episode_to_watch']->season_number ?? 'N/A' }}
+                                    @endif
+                                    E{{ $mediaData['next_episode_to_watch']->episode_number ?? 'N/A' }}
+                                </span>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>

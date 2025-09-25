@@ -49,9 +49,44 @@
                                                 <span class="bg-purple-100 text-purple-800 text-sm font-semibold px-3 py-1 rounded-full">
                                                     Épisode {{ $episode->episode_number }}
                                                 </span>
-                                                @if($episode->runtime)
-                                                    <span class="text-sm text-gray-500">{{ $episode->runtime }} min</span>
-                                                @endif
+                                                <div class="flex items-center space-x-4">
+                                                    @if($episode->runtime)
+                                                        <span class="text-sm text-gray-500">{{ $episode->runtime }} min</span>
+                                                    @endif
+                                                    @if(isset($episode->id) && isset($series->is_saved) && $series->is_saved)
+                                                        @if($episode->is_watched)
+                                                            <form action="{{ route('series.episodes.mark-unwatched') }}" method="POST" class="inline">
+                                                                @csrf
+                                                                <input type="hidden" name="episode_id" value="{{ $episode->id }}">
+                                                                <button type="submit" 
+                                                                        class="bg-gray-100 text-gray-600 px-3 py-1.5 rounded-full transition-all duration-200 hover:bg-gray-200 hover:scale-105"
+                                                                        title="Marquer comme non vu">
+                                                                    <div class="flex items-center gap-1.5">
+                                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                                                                        </svg>
+                                                                        <span class="text-xs font-medium">Vu</span>
+                                                                    </div>
+                                                                </button>
+                                                            </form>
+                                                        @else
+                                                            <form action="{{ route('series.episodes.mark-watched') }}" method="POST" class="inline">
+                                                                @csrf
+                                                                <input type="hidden" name="episode_id" value="{{ $episode->id }}">
+                                                                <button type="submit" 
+                                                                        class="bg-purple-100 text-purple-600 px-3 py-1.5 rounded-full transition-all duration-200 hover:bg-purple-200 hover:scale-105"
+                                                                        title="Marquer comme vu">
+                                                                        <div class="flex items-center gap-1.5">
+                                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                                                                        </svg>
+                                                                        <span class="text-xs font-medium">Vu</span>
+                                                                    </div>
+                                                                </button>
+                                                            </form>
+                                                        @endif
+                                                    @endif
+                                                </div>
                                             </div>
                                             
                                             <h4 class="text-lg font-semibold text-gray-900 mb-2">
@@ -87,9 +122,44 @@
                                                 <span class="bg-purple-100 text-purple-800 text-sm font-semibold px-3 py-1 rounded-full">
                                                     Épisode {{ $episode->episode_number }}
                                                 </span>
-                                                @if($episode->runtime)
-                                                    <span class="text-sm text-gray-500">{{ $episode->runtime }} min</span>
-                                                @endif
+                                                <div class="flex items-center space-x-4">
+                                                    @if($episode->runtime)
+                                                        <span class="text-sm text-gray-500">{{ $episode->runtime }} min</span>
+                                                    @endif
+                                                    @if(isset($episode->id) && isset($series->is_saved) && $series->is_saved)
+                                                        @if($episode->is_watched)
+                                                            <form action="{{ route('series.episodes.mark-unwatched') }}" method="POST" class="inline">
+                                                                @csrf
+                                                                <input type="hidden" name="episode_id" value="{{ $episode->id }}">
+                                                                <button type="submit" 
+                                                                        class="bg-gray-100 text-gray-600 px-3 py-1.5 rounded-full transition-all duration-200 hover:bg-purple-200 hover:scale-105"
+                                                                        title="Marquer comme non vu">
+                                                                    <div class="flex items-center gap-1.5">
+                                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                                                                        </svg>
+                                                                        <span class="text-xs font-medium">Vu</span>
+                                                                    </div>
+                                                                </button>
+                                                            </form>
+                                                        @else
+                                                            <form action="{{ route('series.episodes.mark-watched') }}" method="POST" class="inline">
+                                                                @csrf
+                                                                <input type="hidden" name="episode_id" value="{{ $episode->id }}">
+                                                                <button type="submit" 
+                                                                        class="bg-purple-100 text-purple-600 px-3 py-1.5 rounded-full transition-all duration-200 hover:bg-purple-200 hover:scale-105"
+                                                                        title="Marquer comme vu">
+                                                                    <div class="flex items-center gap-1.5">
+                                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                                                                        </svg>
+                                                                        <span class="text-xs font-medium">Vu</span>
+                                                                    </div>
+                                                                </button>
+                                                            </form>
+                                                        @endif
+                                                    @endif
+                                                </div>
                                             </div>
                                             
                                             <h4 class="text-lg font-semibold text-gray-900 mb-2">
