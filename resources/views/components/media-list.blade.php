@@ -10,8 +10,15 @@
             
             @if(count($movies) > 0)
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-4 items-stretch">
-                    @foreach($movies->take($maxItems ?? $movies->count()) as $movie)
-                        <x-movie-card :movie="$movie" :showSaveButton="$showSaveButtons" />
+                    @foreach($movies->take($maxItems ?? $movies->count()) as $index => $movie)
+                        <div class="relative">
+                            @if($showRanking)
+                                <div class="absolute top-2 left-2 z-10 bg-white text-black px-3 py-1.5 rounded-full shadow-lg border border-gray-200">
+                                    <span class="text-sm font-bold">#{{ $index + 1 }}</span>
+                                </div>
+                            @endif
+                            <x-movie-card :movie="$movie" :showSaveButton="$showSaveButtons" />
+                        </div>
                     @endforeach
                 </div>
                 
@@ -46,8 +53,15 @@
             
             @if(count($series) > 0)
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-4 items-stretch">
-                    @foreach($series->take($maxItems ?? $series->count()) as $seriesItem)
-                        <x-media-card :media="$seriesItem" :showSaveButton="$showSaveButtons" />
+                    @foreach($series->take($maxItems ?? $series->count()) as $index => $seriesItem)
+                        <div class="relative">
+                            @if($showRanking)
+                                <div class="absolute top-2 left-2 z-10 bg-white text-black px-3 py-1.5 rounded-full shadow-lg border border-gray-200">
+                                    <span class="text-sm font-bold">#{{ $index + 1 }}</span>
+                                </div>
+                            @endif
+                            <x-media-card :media="$seriesItem" :showSaveButton="$showSaveButtons" />
+                        </div>
                     @endforeach
                 </div>
                 

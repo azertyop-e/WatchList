@@ -566,7 +566,6 @@ abstract class MediaController extends Controller
         $page = $request->get('page', 1);
         $perPage = $request->get('per_page', 10);
         
-        // Limiter à 5 pages maximum
         if ($page > 5) {
             $page = 5;
         }
@@ -574,12 +573,10 @@ abstract class MediaController extends Controller
             $page = 1;
         }
 
-        // Récupération des films populaires
         $moviesUrl = "/movie/popular?language=fr-FR&include_adult=false&page=" . $page;
         $moviesData = $this->getCurlData($moviesUrl);
         $moviesData = $this->addSavedStatusToMedia($moviesData);
 
-        // Récupération des séries populaires
         $seriesUrl = "/tv/popular?language=fr-FR&include_adult=false&page=" . $page;
         $seriesData = $this->getCurlData($seriesUrl);
         $seriesData = $this->addSavedStatusToMedia($seriesData);
@@ -590,7 +587,7 @@ abstract class MediaController extends Controller
         $startItem = ($page - 1) * $itemsPerPage + 1;
         $endItem = min($page * $itemsPerPage, $totalResults);
 
-        $viewData = [
+        $mediaData = [
             'moviesData' => $moviesData,
             'seriesData' => $seriesData,
             'currentPage' => $page,
@@ -601,6 +598,60 @@ abstract class MediaController extends Controller
             'endItem' => $endItem,
         ];
 
-        return view('media.popular', $viewData);
+        return view('media.popular', $mediaData);
+    }
+
+    /**
+     * Récupère et affiche les 100 premiers médias les mieux notés
+     * 
+     * Cette méthode récupère les 100 premiers films et séries les mieux notés
+     * depuis l'API TMDB (5 pages de 20 éléments chacun) et ajoute le statut de sauvegarde pour chaque média.
+     * 
+     * @return \Illuminate\View\View Vue avec les données des médias
+     * 
+     * @throws \Exception En cas d'erreur lors de l'appel à l'API TMDB
+     */
+    public function getTopList()
+    {
+        $moviesData = $this->getTopRatedMedia('/movie/top_rated');
+        $seriesData = $this->getTopRatedMedia('/tv/top_rated');
+
+        $mediaData = [
+            'moviesData' => $moviesData,
+            'seriesData' => $seriesData,
+        ];
+
+        return view('media.top', $mediaData);
+    }
+
+    /**
+     * Récupère les médias les mieux notés sur plusieurs pages
+     * 
+     * @param string $endpoint L'endpoint API (ex: '/movie/top_rated' ou '/tv/top_rated')
+     * @param int $maxPages Le nombre maximum de pages à récupérer
+     * 
+     * @return array Les données des médias avec le statut de sauvegarde
+     */
+    private function getTopRatedMedia(string $endpoint, int $maxPages = 5): array
+    {
+        $allMedia = [];
+        
+        for ($page = 1; $page <= $maxPages; $page++) {
+            $url = $endpoint . "?language=fr-FR&include_adult=false&page=" . $page;
+            $pageData = $this->getCurlData($url);
+            
+            if ($pageData && isset($pageData['results'])) {
+                $allMedia = array_merge($allMedia, $pageData['results']);
+            }
+        }
+        
+        $mediaData = [
+            'results' => $allMedia,
+            'total_results' => count($allMedia),
+            'total_pages' => $maxPages,
+            'page' => 1
+        ];
+        
+        return $this->addSavedStatusToMedia($mediaData);
     }
 }

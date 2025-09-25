@@ -12,11 +12,12 @@ class MediaList extends Component
     public $seriesTitle;
     public $showSaveButtons;
     public $maxItems;
+    public $showRanking;
 
     /**
      * Create a new component instance.
      */
-    public function __construct($movies = [], $series = [], $moviesTitle = 'Films', $seriesTitle = 'Séries', $showSaveButtons = true, $maxItems = null)
+    public function __construct($movies = [], $series = [], $moviesTitle = 'Films', $seriesTitle = 'Séries', $showSaveButtons = true, $maxItems = null, $showRanking = false)
     {
         $this->movies = $movies;
         $this->series = $series;
@@ -24,6 +25,7 @@ class MediaList extends Component
         $this->seriesTitle = $seriesTitle;
         $this->showSaveButtons = $showSaveButtons;
         $this->maxItems = $maxItems;
+        $this->showRanking = $showRanking;
     }
 
     /**
