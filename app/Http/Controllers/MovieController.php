@@ -495,9 +495,15 @@ class MovieController extends MediaController
         }
         
         $savedMovieIds = Movie::pluck('id')->toArray();
+        $savedSeriesIds = Series::pluck('tmdb_id')->toArray();
         
-        foreach ($mediaData['results'] as &$movie) {
-            $movie['is_saved'] = in_array($movie['id'], $savedMovieIds);
+        foreach ($mediaData['results'] as &$item) {
+            if (isset($item['title'])) {
+                $item['is_saved'] = in_array($item['id'], $savedMovieIds);
+            }
+            elseif (isset($item['name'])) {
+                $item['is_saved'] = in_array($item['id'], $savedSeriesIds);
+            }
         }
         
         return $mediaData;
