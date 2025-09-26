@@ -12,5 +12,5 @@
             @endif
         @endfor
     </div>
-    <span class="ml-2 text-sm font-semibold text-gray-700">{{ number_format($voteAverage, 1) }}/10</span>
+    <span class="ml-2 text-sm font-semibold text-gray-700">{{ number_format(($voteAverage / 10) * 100, 0) }}%</span>
 </div>

@@ -59,7 +59,7 @@
                                     @endif
                                 @endfor
                             </div>
-                            <span class="ml-2 text-lg font-semibold text-gray-700">{{ number_format($mediaData['vote_average'], 1) }}/10</span>
+                            <span class="ml-2 text-lg font-semibold text-gray-700">{{ number_format(($mediaData['vote_average'] / 10) * 100, 0) }}%</span>
                             @if(isset($mediaData['vote_count']))
                                 <span class="ml-2 text-sm text-gray-500">({{ number_format($mediaData['vote_count']) }} votes)</span>
                             @endif
