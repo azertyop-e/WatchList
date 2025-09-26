@@ -229,7 +229,7 @@ class SerieController extends MediaController
                 $this->saveAllSeasons($series->tmdb_id, false, 20, false);
 
                     DB::commit();
-                return redirect()->back()->with('success', "Série '{$series->name}' ajoutée avec succès avec toutes ses informations.");
+                return redirect()->back()->with('success', "Série {$series->name} ajoutée.");
 
             } catch (\Exception $transactionError) {
                 DB::rollBack();
@@ -815,7 +815,7 @@ class SerieController extends MediaController
                         ->with('success', 'Dernier épisode de la série marqué comme non vu.')
                         ->with('toast', [
                             'type' => 'info',
-                            'message' => "La série \"{$series->name}\" a été automatiquement marquée comme non terminée."
+                            'message' => "La série {$series->name} a été automatiquement marquée comme non terminée."
                         ]);
                 }
             }

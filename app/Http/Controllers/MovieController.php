@@ -328,7 +328,7 @@ class MovieController extends MediaController
             // Supprimer le film
             $movie->delete();
             
-            return Redirect::back()->with('success', "Le film '{$movieTitle}' a été supprimé avec succès");
+            return Redirect::back()->with('success', "Le film « {$movieTitle} » a été supprimé avec succès.");
             
         } catch (\Exception $e) {
             Log::error('Erreur lors de la suppression du film', [
