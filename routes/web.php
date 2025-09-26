@@ -27,7 +27,6 @@ Route::controller(SerieController::class)->prefix('series')->name('series.')->gr
     Route::post('/save', 'saveSeries')->name('save');
     Route::post('/save-complete/{tmdbId}', 'saveCompleteSeries')->name('save-complete')->where('tmdbId', '[0-9]+');
     Route::put('/update-complete/{tmdbId}', 'updateCompleteSeries')->name('update-complete')->where('tmdbId', '[0-9]+');
-    Route::post('/mark-seen', 'markAsSeen')->name('mark-seen');
     Route::post('/mark-unseen', 'markAsUnseen')->name('mark-unseen');
     Route::delete('/delete', 'deleteSeries')->name('delete');
     

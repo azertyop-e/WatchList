@@ -82,9 +82,6 @@ class MediaCard extends Component
 
     public function getMarkSeenRoute()
     {
-        if ($this->mediaType === 'tv') {
-            return route('series.mark-seen');
-        }
         return route('movie.mark-seen');
     }
 

@@ -434,21 +434,37 @@ class SerieController extends MediaController
     }
 
     /**
-     * Marque une série comme vue
-     */
-    public function markAsSeen(Series $series)
-    {
-        $series->is_watched = true;
-        $series->save();
-    }
-
-    /**
      * Marque une série comme non vue
      */
-    public function markAsUnseen(Series $series)
+    public function markAsUnseen(Request $request)
     {
+        $seriesId = $request->input('series_id');
+        $series = Series::with(['seasons.episodes'])->find($seriesId);
+        
+        if (!$series) {
+            return redirect()->back()->with('error', 'Série non trouvée');
+        }
+        
         $series->is_watched = false;
         $series->save();
+        
+        // Marquer le dernier épisode de la série comme non vu
+        $allEpisodes = $series->seasons()
+            ->with('episodes')
+            ->get()
+            ->pluck('episodes')
+            ->flatten();
+            
+        $lastEpisode = $allEpisodes->filter(function($episode) {
+            return $episode->isLastEpisodeOfSeries();
+        })->first();
+        
+        if ($lastEpisode) {
+            $lastEpisode->is_watched = false;
+            $lastEpisode->save();
+        }
+        
+        return redirect()->back()->with('success', 'Série marquée comme non vue');
     }
 
     /**
