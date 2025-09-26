@@ -7,10 +7,10 @@
         @endif
         
         
-        @if($isObject && isset($media) && $media->id && !$showMarkUnseenButton)
+        @if($isObject && isset($media) && $media->id && !$showMarkUnseenButton && $mediaType !== 'tv')
         <form action="{{ $getMarkSeenRoute() }}" method="POST" class="absolute top-3 right-3 z-10">
             @csrf
-            <input type="hidden" name="{{ $mediaType === 'tv' ? 'series_id' : 'movie_id' }}" value="{{ $media->id }}">
+            <input type="hidden" name="movie_id" value="{{ $media->id }}">
             <button type="submit" 
                     class="bg-white text-black px-3 py-1.5 rounded-full shadow-lg border border-gray-200 transition-all duration-200 hover:bg-gray-50 hover:shadow-xl hover:scale-105 hover:border-gray-300"
                     title="Marquer comme vu">

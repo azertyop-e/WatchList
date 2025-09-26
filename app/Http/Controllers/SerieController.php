@@ -436,35 +436,19 @@ class SerieController extends MediaController
     /**
      * Marque une série comme vue
      */
-    public function markAsSeen(Request $request)
+    public function markAsSeen(Series $series)
     {
-        $seriesId = $request->input('series_id');
-        $series = Series::find($seriesId);
-        
-        if ($series) {
-            $series->is_watched = true;
-            $series->save();
-            return redirect()->back()->with('success', 'Série marquée comme vue');
-        }
-        
-        return redirect()->back()->with('error', 'Série non trouvée');
+        $series->is_watched = true;
+        $series->save();
     }
 
     /**
      * Marque une série comme non vue
      */
-    public function markAsUnseen(Request $request)
+    public function markAsUnseen(Series $series)
     {
-        $seriesId = $request->input('series_id');
-        $series = Series::find($seriesId);
-        
-        if ($series) {
-            $series->is_watched = false;
-            $series->save();
-            return redirect()->back()->with('success', 'Série marquée comme non vue');
-        }
-        
-        return redirect()->back()->with('error', 'Série non trouvée');
+        $series->is_watched = false;
+        $series->save();
     }
 
     /**
@@ -803,11 +787,26 @@ class SerieController extends MediaController
     public function markEpisodeAsWatched(Request $request)
     {
         $episodeId = $request->input('episode_id');
-        $episode = Episode::find($episodeId);
+        $episode = Episode::with(['season.series'])->find($episodeId);
         
         if ($episode) {
             $episode->is_watched = true;
             $episode->save();
+            
+            if ($episode->isLastEpisodeOfSeries()) {
+                $series = $episode->season->series;
+                if ($series && !$series->is_watched) {
+                    $this->markAsSeen($series);
+                    
+                    return redirect()->back()
+                        ->with('success', 'Dernier épisode de la série marqué comme vu.')
+                        ->with('toast', [
+                            'type' => 'success',
+                            'message' => "Vous avez terminé la série \"{$series->name}\" ! Elle a été automatiquement marquée comme terminée."
+                        ]);
+                }
+            }
+            
             return redirect()->back()->with('success', 'Épisode marqué comme vu');
         }
         
@@ -820,11 +819,26 @@ class SerieController extends MediaController
     public function markEpisodeAsUnwatched(Request $request)
     {
         $episodeId = $request->input('episode_id');
-        $episode = Episode::find($episodeId);
+        $episode = Episode::with(['season.series'])->find($episodeId);
         
         if ($episode) {
             $episode->is_watched = false;
             $episode->save();
+            
+            if ($episode->isLastEpisodeOfSeries()) {
+                $series = $episode->season->series;
+                if ($series && $series->is_watched) {
+                    $this->markAsUnseen($series);
+                    
+                    return redirect()->back()
+                        ->with('success', 'Dernier épisode de la série marqué comme non vu.')
+                        ->with('toast', [
+                            'type' => 'info',
+                            'message' => "La série \"{$series->name}\" a été automatiquement marquée comme non terminée."
+                        ]);
+                }
+            }
+            
             return redirect()->back()->with('success', 'Épisode marqué comme non vu');
         }
         

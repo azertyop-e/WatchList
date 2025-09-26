@@ -34,6 +34,17 @@
     <main class="min-h-screen bg-gray-50">
         @yield('content')
     </main>
+
+    {{-- Affichage des toasts --}}
+    @if(session('toast'))
+        <x-toast 
+            type="{{ session('toast.type') }}" 
+            message="{{ session('toast.message') }}"
+            position="top-right"
+            :duration="5000"
+            :dismissible="true"
+        />
+    @endif
     <footer class="bg-white border-t border-gray-200 relative z-50" style="z-index: 9999;">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div class="flex flex-row md:flex-row gap-8">

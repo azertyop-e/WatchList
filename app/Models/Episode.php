@@ -127,4 +127,24 @@ class Episode extends Model
     {
         return $query->where('episode_type', 'special');
     }
+
+    /**
+     * Vérifie si cet épisode est le dernier épisode de la série entière
+     * 
+     * @return bool
+     */
+    public function isLastEpisodeOfSeries(): bool
+    {
+        $series = $this->season->series;
+        
+        $maxSeasonNumber = $series->seasons()->max('season_number');
+        
+        if ($this->season->season_number !== $maxSeasonNumber) {
+            return false;
+        }
+        
+        $maxEpisodeNumber = $this->season->episodes()->max('episode_number');
+        
+        return $this->episode_number === $maxEpisodeNumber;
+    }
 }
