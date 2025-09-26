@@ -243,4 +243,35 @@ class Series extends Model
 
         return $nextEpisode;
     }
+
+    /**
+     * Obtient le nombre d'épisodes vus
+     * 
+     * @return int
+     */
+    public function getWatchedEpisodesCount(): int
+    {
+        return $this->seasons()
+            ->with('episodes')
+            ->get()
+            ->pluck('episodes')
+            ->flatten()
+            ->where('is_watched', true)
+            ->count();
+    }
+
+    /**
+     * Obtient le nombre total d'épisodes
+     * 
+     * @return int
+     */
+    public function getTotalEpisodesCount(): int
+    {
+        return $this->seasons()
+            ->with('episodes')
+            ->get()
+            ->pluck('episodes')
+            ->flatten()
+            ->count();
+    }
 }

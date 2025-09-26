@@ -55,6 +55,10 @@
         </div>
 
         <div class="mt-4 space-y-3">
+            @if($isObject && $mediaType === 'tv' && isset($media))
+                <x-SeriesProgress :series="$media" />
+            @endif
+
             @if($isObject && ($media->is_watched ?? $media->is_seen ?? false))
             <form action="{{ $mediaType === 'tv' ? route('series.delete') : route('movie.delete') }}" method="POST" 
                   onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce {{ $mediaType === 'tv' ? 'série' : 'film' }} ? Cette action est irréversible.')">

@@ -37,6 +37,7 @@ Route::controller(SerieController::class)->prefix('series')->name('series.')->gr
     
     Route::post('/episodes/mark-watched', 'markEpisodeAsWatched')->name('episodes.mark-watched');
     Route::post('/episodes/mark-unwatched', 'markEpisodeAsUnwatched')->name('episodes.mark-unwatched');
+    Route::post('/{seriesId}/mark-episode-watched', 'markEpisodeProgress')->name('mark-episode-watched')->where('seriesId', '[0-9]+');
     
     Route::get('/{id}', 'getMediaDetails')->name('detail')->where('id', '[0-9]+');
 });

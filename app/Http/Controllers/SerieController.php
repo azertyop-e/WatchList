@@ -1166,4 +1166,64 @@ class SerieController extends MediaController
             'updated' => $episodesUpdated
         ];
     }
+
+    /**
+     * Marque un épisode comme vu ou non vu pour le suivi de progression
+     * 
+     * @param Request $request
+     * @param int $seriesId
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function markEpisodeProgress(Request $request, int $seriesId)
+    {
+        $series = Series::findOrFail($seriesId);
+        $action = $request->input('action'); // 'next' ou 'previous'
+        
+        $nextEpisode = $series->getNextEpisodeToWatch();
+        
+        if (!$nextEpisode) {
+            return back()->with('error', 'Aucun épisode trouvé pour cette série.');
+        }
+        
+        if ($action === 'next') {
+            // Marquer le prochain épisode comme vu
+            $nextEpisode->update(['is_watched' => true]);
+            
+            // Vérifier si c'est le dernier épisode de la série
+            if ($nextEpisode->isLastEpisodeOfSeries()) {
+                $series->update(['is_watched' => true]);
+                return back()->with('success', 'Félicitations ! Vous avez terminé cette série !');
+            }
+            
+            return back()->with('success', 'Épisode marqué comme vu !');
+            
+        } elseif ($action === 'previous') {
+            // Trouver l'épisode précédent et le marquer comme non vu
+            $allEpisodes = $series->seasons()
+                ->with('episodes')
+                ->get()
+                ->pluck('episodes')
+                ->flatten()
+                ->sortBy(function($episode) {
+                    $season = $episode->season;
+                    return ($season->season_number * 1000) + $episode->episode_number;
+                });
+            
+            $currentEpisodeIndex = $allEpisodes->search(function($episode) use ($nextEpisode) {
+                return $episode->id === $nextEpisode->id;
+            });
+            
+            if ($currentEpisodeIndex > 0) {
+                $previousEpisode = $allEpisodes->get($currentEpisodeIndex - 1);
+                if ($previousEpisode && $previousEpisode->is_watched) {
+                    $previousEpisode->update(['is_watched' => false]);
+                    return back()->with('success', 'Épisode précédent marqué comme non vu.');
+                }
+            }
+            
+            return back()->with('info', 'Aucun épisode précédent à marquer comme non vu.');
+        }
+        
+        return back()->with('error', 'Action non reconnue.');
+    }
 }
