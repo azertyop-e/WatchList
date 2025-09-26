@@ -34,8 +34,8 @@
     </div>
 
     <div class="p-6 flex flex-col flex-1">
-        <div class="flex-1">
-            <h2 class="text-xl font-bold mb-2 line-clamp-2 {{ $isWatched ? 'text-gray-500' : 'text-gray-900' }}">
+        <div class="flex-1 flex flex-col">
+            <h2 class="text-xl font-bold mb-2 line-clamp-2 {{ $isWatched ? 'text-gray-500' : 'text-gray-900' }}" style="min-height: 3.5rem;">
                 {{ $title }}
             </h2>
             
@@ -50,7 +50,7 @@
             @endif
 
             @if($isObject && $media->genders && $media->genders->count() > 0)
-                <div class="mb-3">
+                <div class="mb-3 flex-1">
                     <div class="flex flex-wrap gap-1">
                         @foreach($media->genders as $genre)
                             <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">
@@ -59,6 +59,8 @@
                         @endforeach
                     </div>
                 </div>
+            @else
+                <div class="flex-1"></div>
             @endif
         </div>
 
