@@ -16,6 +16,7 @@ Route::controller(MovieController::class)->prefix('movie')->name('movie.')->grou
     Route::post('/save', 'saveMovie')->name('save');
     Route::post('/mark-seen', 'markAsSeen')->name('mark-seen');
     Route::post('/mark-unseen', 'markAsUnseen')->name('mark-unseen');
+    Route::delete('/delete', 'deleteMovie')->name('delete');
     Route::get('/{id}', 'getMovieDetails')->name('detail')->where('id', '[0-9]+');
 });
 
@@ -28,6 +29,7 @@ Route::controller(SerieController::class)->prefix('series')->name('series.')->gr
     Route::put('/update-complete/{tmdbId}', 'updateCompleteSeries')->name('update-complete')->where('tmdbId', '[0-9]+');
     Route::post('/mark-seen', 'markAsSeen')->name('mark-seen');
     Route::post('/mark-unseen', 'markAsUnseen')->name('mark-unseen');
+    Route::delete('/delete', 'deleteSeries')->name('delete');
     
     Route::post('/{seriesTmdbId}/seasons/save-all', 'saveAllSeasons')->name('seasons.save-all')->where('seriesTmdbId', '[0-9]+');
     Route::post('/{seriesTmdbId}/seasons/{seasonNumber}/save', 'saveSeason')->name('seasons.save')->where(['seriesTmdbId' => '[0-9]+', 'seasonNumber' => '[0-9]+']);

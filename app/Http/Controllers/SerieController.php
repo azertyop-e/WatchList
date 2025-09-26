@@ -796,7 +796,8 @@ class SerieController extends MediaController
             if ($episode->isLastEpisodeOfSeries()) {
                 $series = $episode->season->series;
                 if ($series && !$series->is_watched) {
-                    $this->markAsSeen($series);
+                    $series->is_watched = true;
+                    $series->save();
                     
                     return redirect()->back()
                         ->with('success', 'Dernier épisode de la série marqué comme vu.')
@@ -828,7 +829,8 @@ class SerieController extends MediaController
             if ($episode->isLastEpisodeOfSeries()) {
                 $series = $episode->season->series;
                 if ($series && $series->is_watched) {
-                    $this->markAsUnseen($series);
+                    $series->is_watched = false;
+                    $series->save();
                     
                     return redirect()->back()
                         ->with('success', 'Dernier épisode de la série marqué comme non vu.')
@@ -845,7 +847,79 @@ class SerieController extends MediaController
         return redirect()->back()->with('error', 'Épisode non trouvé');
     }
 
+    /**
+     * Supprime une série de la base de données
+     * 
+     * Cette méthode supprime complètement une série de la base de données,
+     * y compris toutes ses relations (genres, acteurs, saisons, épisodes, etc.).
+     * La série doit être marquée comme vue pour pouvoir être supprimée.
+     * 
+     * @param Request $request Contient le paramètre 'series_id' (ID de la série)
+     * 
+     * @return \Illuminate\Http\RedirectResponse Redirection avec message de succès/erreur
+     */
+    public function deleteSeries(Request $request)
+    {
+        $seriesId = $request->input('series_id');
+        $series = Series::find($seriesId);
+        
+        if (!$series) {
+            return redirect()->back()->with('error', 'Série non trouvée');
+        }
+        
+        // Vérifier que la série est marquée comme vue
+        if (!$series->is_watched) {
+            return redirect()->back()->with('error', 'Seules les séries vues peuvent être supprimées');
+        }
+        
+        try {
+            $seriesName = $series->name;
+            
+            // Supprimer les épisodes de toutes les saisons
+            foreach ($series->seasons as $season) {
+                $season->episodes()->delete();
+            }
+            
+            // Supprimer les saisons
+            $series->seasons()->delete();
+            
+            // Supprimer les relations pivot (many-to-many)
+            $series->genders()->detach();
+            $series->productionCompanies()->detach();
+            $series->productionCountries()->detach();
+            $series->spokenLanguages()->detach();
+            $series->networks()->detach();
+            $series->creators()->detach();
+            
+            // Supprimer les rôles (relation hasMany)
+            $series->roles()->delete();
+            
+            // Supprimer les images associées si elles existent
+            if ($series->poster_path) {
+                $posterPath = "poster/" . $series->poster_path;
+                if (Storage::disk('public')->exists($posterPath)) {
+                    Storage::disk('public')->delete($posterPath);
+                }
+            }
+            
+            // Supprimer la série
+            $series->delete();
+            
+            return redirect()->back()->with('success', "La série '{$seriesName}' a été supprimée avec succès");
+            
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la suppression de la série', [
+                'series_id' => $seriesId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->back()->with('error', 'Une erreur est survenue lors de la suppression de la série');
+        }
+    }
+
     // Méthodes utilitaires privées
+
 
     private function createSeries(array $seriesData): Series
     {

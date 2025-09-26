@@ -350,6 +350,67 @@ class MovieController extends MediaController
     }
 
     /**
+     * Supprime un film de la base de données
+     * 
+     * Cette méthode supprime complètement un film de la base de données,
+     * y compris toutes ses relations (genres, acteurs, etc.).
+     * Le film doit être marqué comme vu pour pouvoir être supprimé.
+     * 
+     * @param Request $request Contient le paramètre 'movie_id' (ID du film)
+     * 
+     * @return \Illuminate\Http\RedirectResponse Redirection avec message de succès/erreur
+     */
+    public function deleteMovie(Request $request)
+    {
+        $movieId = $request->input('movie_id');
+        $movie = Movie::find($movieId);
+        
+        if (!$movie) {
+            return Redirect::back()->with('error', 'Film non trouvé');
+        }
+        
+        // Vérifier que le film est marqué comme vu
+        if (!$movie->is_seen) {
+            return Redirect::back()->with('error', 'Seuls les films vus peuvent être supprimés');
+        }
+        
+        try {
+            $movieTitle = $movie->title;
+            
+            // Supprimer les relations pivot (les relations many-to-many)
+            $movie->genders()->detach();
+            $movie->productionCompanies()->detach();
+            $movie->productionCountries()->detach();
+            $movie->spokenLanguages()->detach();
+            
+            // Supprimer les rôles (relation hasMany)
+            $movie->roles()->delete();
+            
+            // Supprimer les images associées si elles existent
+            if ($movie->poster_path) {
+                $posterPath = "poster/" . $movie->poster_path;
+                if (Storage::disk('public')->exists($posterPath)) {
+                    Storage::disk('public')->delete($posterPath);
+                }
+            }
+            
+            // Supprimer le film
+            $movie->delete();
+            
+            return Redirect::back()->with('success', "Le film '{$movieTitle}' a été supprimé avec succès");
+            
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la suppression du film', [
+                'movie_id' => $movieId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return Redirect::back()->with('error', 'Une erreur est survenue lors de la suppression du film');
+        }
+    }
+
+    /**
      * Retourne le type de média pour les films
      * 
      * @return string Le type de média

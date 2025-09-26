@@ -55,12 +55,24 @@
         </div>
 
         <div class="mt-4 space-y-3">
+            @if($isObject && ($media->is_watched ?? $media->is_seen ?? false))
+            <form action="{{ $mediaType === 'tv' ? route('series.delete') : route('movie.delete') }}" method="POST" 
+                  onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce {{ $mediaType === 'tv' ? 'série' : 'film' }} ? Cette action est irréversible.')">
+                @csrf
+                @method('DELETE')
+                <input type="hidden" name="{{ $mediaType === 'tv' ? 'series_id' : 'movie_id' }}" value="{{ $id }}">
+                <button type="submit" 
+                    class="w-full border-2 border-gray-400 text-gray-700 bg-gray-50 font-semibold py-2 mb-2 px-4 rounded-lg transition-all duration-200 hover:bg-gray-100 hover:border-gray-500 hover:text-gray-800 flex items-center justify-center">
+                    Supprimer définitivement
+                </button>
+            </form>
+            @endif
             @if($showMarkUnseenButton)
             <form action="{{ $getMarkUnseenRoute() }}" method="POST">
                 @csrf
                 <input type="hidden" name="{{ $mediaType === 'tv' ? 'series_id' : 'movie_id' }}" value="{{ $id }}">
                 <button type="submit" 
-                        class="w-full border border-gray-600 text-gray-600 font-semibold py-2 mb-2 px-4 rounded-lg transition-colors duration-200 hover:bg-gray-50 flex items-center justify-center">
+                        class="w-full border-2 border-gray-400 text-gray-700 bg-gray-50 font-semibold py-2 mb-2 px-4 rounded-lg transition-all duration-200 hover:bg-gray-100 hover:border-gray-500 hover:text-gray-800 flex items-center justify-center">
                     Marquer comme non {{ $mediaType === 'tv' ? 'vue' : 'vu' }}
                 </button>
             </form>
