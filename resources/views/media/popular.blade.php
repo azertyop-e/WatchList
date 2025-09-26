@@ -21,7 +21,6 @@
     </div>
 
     @if((isset($moviesData['results']) && count($moviesData['results']) > 0) || (isset($seriesData['results']) && count($seriesData['results']) > 0))
-        <!-- Utilisation du composant MediaList -->
         <x-media-list 
             :movies="collect($moviesData['results'] ?? [])" 
             :series="collect($seriesData['results'] ?? [])" 
@@ -30,12 +29,7 @@
             :showSaveButtons="true" 
         />
 
-        <!-- Pagination -->
         <div class="mt-8 mb-4 flex flex-col lg:flex-row justify-between items-center space-y-4 lg:space-y-0">
-            <div class="text-sm text-gray-600">
-                Affichage de {{ $startItem }} à {{ $endItem }} sur {{ $totalResults }} résultats
-            </div>
-            
             <nav aria-label="Pagination" class="flex justify-center items-center text-gray-600">
                 @if($currentPage > 1)
                     <a href="{{ route('popular', ['page' => $currentPage - 1, 'per_page' => $perPage]) }}" 

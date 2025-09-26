@@ -574,8 +574,8 @@ abstract class MediaController extends Controller
         $page = $request->get('page', 1);
         $perPage = $request->get('per_page', 10);
         
-        if ($page > 5) {
-            $page = 5;
+        if ($page > 10) {
+            $page = 10;
         }
         if ($page < 1) {
             $page = 1;
@@ -590,8 +590,8 @@ abstract class MediaController extends Controller
         $seriesData = $this->addSavedStatusToMedia($seriesData);
 
         $totalResults = max($moviesData['total_results'] ?? 0, $seriesData['total_results'] ?? 0);
-        $totalPages = min(max($moviesData['total_pages'] ?? 5, $seriesData['total_pages'] ?? 5), 5);
-        $itemsPerPage = 10;
+        $totalPages = min(max($moviesData['total_pages'] ?? 10, $seriesData['total_pages'] ?? 10), 10);
+        $itemsPerPage = 40;
         $startItem = ($page - 1) * $itemsPerPage + 1;
         $endItem = min($page * $itemsPerPage, $totalResults);
 
