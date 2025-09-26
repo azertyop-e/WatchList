@@ -1,9 +1,17 @@
 <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden group h-full flex flex-col">
-    <div class="h-64 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center relative overflow-hidden flex-shrink-0">
+    <div class="h-64 bg-gray-200 flex items-center justify-center relative overflow-hidden flex-shrink-0">
         @if(isset($posterPath) && $posterPath)
             <img src="{{ \App\Helpers\ImageHelper::getPosterUrl($posterPath) }}" 
                 alt="{{ $title }}" 
-                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 {{ $isWatched ? 'opacity-50' : '' }}">
+        @endif
+        
+        @if($isWatched)
+            <div class="absolute inset-0 flex items-center justify-center">
+                <div class="bg-white text-gray-700 px-4 py-2 rounded-full font-semibold text-sm shadow-lg">
+                    Déjà vu
+                </div>
+            </div>
         @endif
         
         
@@ -27,7 +35,7 @@
 
     <div class="p-6 flex flex-col flex-1">
         <div class="flex-1">
-            <h2 class="text-xl font-bold text-gray-900 mb-2 line-clamp-2">
+            <h2 class="text-xl font-bold mb-2 line-clamp-2 {{ $isWatched ? 'text-gray-500' : 'text-gray-900' }}">
                 {{ $title }}
             </h2>
             

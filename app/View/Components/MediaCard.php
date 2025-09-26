@@ -19,6 +19,7 @@ class MediaCard extends Component
     public $isSaved = false;
     public $mediaType;
     public $firstAirDate;
+    public $isWatched = false;
 
     public function __construct($media, $showSaveButton = true, $showMarkUnseenButton = false)
     {
@@ -57,6 +58,15 @@ class MediaCard extends Component
         $this->overview = $this->isObject ? $media->overview : ($media['overview'] ?? '');
         $this->id = $this->isObject ? $media->id : ($media['id'] ?? null);
         $this->isSaved = $this->isObject ? false : (isset($media['is_saved']) ? $media['is_saved'] : false);
+        
+        // Détecter si le média est déjà vu
+        if ($this->isObject) {
+            $this->isWatched = ($this->mediaType === 'tv') 
+                ? ($media->is_watched ?? false) 
+                : ($media->is_seen ?? false);
+        } else {
+            $this->isWatched = false;
+        }
     }
 
     public function getLocalPosterUrl()

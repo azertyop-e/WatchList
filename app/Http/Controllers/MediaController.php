@@ -393,27 +393,25 @@ abstract class MediaController extends Controller
     abstract protected function getDataVariableName(): string;
 
     /**
-     * Récupère les films et séries sauvegardés non vus avec filtrage par genre
+     * Récupère les films et séries sauvegardés (vus et non vus) avec filtrage par genre
      * 
      * Cette méthode récupère tous les films et séries sauvegardés en base de données
-     * qui n'ont pas encore été marqués comme vus, avec possibilité de
-     * filtrer par genre. Elle récupère également la liste des genres
-     * disponibles pour le filtrage.
+     * avec possibilité de filtrer par genre. Elle retourne séparément les médias
+     * non vus et les médias vus pour affichage en deux sections distinctes.
      * 
      * @param Request $request Contient le paramètre optionnel 'genre' pour le filtrage
      * 
      * @return \Illuminate\View\View Vue 'home' avec les films, séries et genres
      */
     public function getMediaStored(Request $request){
-        // Récupération des films non vus
+        $selectedType = $request->input('type', 'all');
+        $genreId = $request->has('genre') && $request->input('genre') != '' ? $request->input('genre') : null;
+        
         $movieQuery = Movie::with('genders')->where('is_seen', false);
         
-        // Récupération des séries non vues
         $seriesQuery = Series::with('genders')->where('is_watched', false);
         
-        if ($request->has('genre') && $request->input('genre') != '') {
-            $genreId = $request->input('genre');
-            
+        if ($genreId) {
             $movieQuery->whereHas('genders', function($q) use ($genreId) {
                 $q->where('gender.id', $genreId);
             });
@@ -423,47 +421,58 @@ abstract class MediaController extends Controller
             });
         }
         
-        $selectedType = $request->input('type', 'all');
-        
-        // Récupérer les données selon le type sélectionné
         if ($selectedType === 'film') {
             $movies = $movieQuery->orderBy('created_at', 'desc')->get();
-            $series = collect(); // Pas de séries
+            $series = collect(); 
         } elseif ($selectedType === 'serie') {
-            $movies = collect(); // Pas de films
+            $movies = collect(); 
             $series = $seriesQuery->orderBy('created_at', 'desc')->get();
         } else {
-            // Si 'all', on garde les deux
             $movies = $movieQuery->orderBy('created_at', 'desc')->get();
             $series = $seriesQuery->orderBy('created_at', 'desc')->get();
         }
         
-        // Récupérer les genres selon le type sélectionné
-        if ($selectedType === 'film') {
-            $genres = Gender::whereHas('movies', function($q) {
-                $q->where('is_seen', false);
-            })->orderBy('name')->get();
-        } elseif ($selectedType === 'serie') {
-            $genres = Gender::whereHas('series', function($q) {
-                $q->where('is_watched', false);
-            })->orderBy('name')->get();
-        } else {
-            // Si 'all', on combine les genres des deux types
-            $movieGenres = Gender::whereHas('movies', function($q) {
-                $q->where('is_seen', false);
-            })->get();
+        $seenMovieQuery = Movie::with('genders')->where('is_seen', true);
+        
+        $seenSeriesQuery = Series::with('genders')->where('is_watched', true);
+        
+        if ($genreId) {
+            $seenMovieQuery->whereHas('genders', function($q) use ($genreId) {
+                $q->where('gender.id', $genreId);
+            });
             
-            $seriesGenres = Gender::whereHas('series', function($q) {
-                $q->where('is_watched', false);
-            })->get();
-            
-            $genres = $movieGenres->merge($seriesGenres)->unique('id')->sortBy('name');
+            $seenSeriesQuery->whereHas('genders', function($q) use ($genreId) {
+                $q->where('gender.id', $genreId);
+            });
         }
+        
+        if ($selectedType === 'film') {
+            $seenMovies = $seenMovieQuery->orderBy('updated_at', 'desc')->get();
+            $seenSeries = collect(); 
+        } elseif ($selectedType === 'serie') {
+            $seenMovies = collect(); 
+            $seenSeries = $seenSeriesQuery->orderBy('updated_at', 'desc')->get();
+        } else {
+            $seenMovies = $seenMovieQuery->orderBy('updated_at', 'desc')->get();
+            $seenSeries = $seenSeriesQuery->orderBy('updated_at', 'desc')->get();
+        }
+        
+        $seenMovies->each(function($movie) {
+            $movie->media_type = 'movie';
+        });
+        
+        $seenSeries->each(function($serie) {
+            $serie->media_type = 'series';
+        });
+        
+        $allSeenMedia = $seenMovies->concat($seenSeries)->sortByDesc('updated_at');
         
         return view('home', [
             'movies' => $movies,
             'series' => $series,
-            'genres' => $genres,
+            'seenMovies' => $seenMovies,
+            'seenSeries' => $seenSeries,
+            'allSeenMedia' => $allSeenMedia,
             'selectedGenre' => $request->input('genre', ''),
             'selectedType' => $selectedType
         ]);
@@ -472,9 +481,8 @@ abstract class MediaController extends Controller
     /**
      * Sauvegarde le casting d'un média avec téléchargement des photos de profil
      * 
-     * Cette méthode optimisée sauvegarde le casting d'un média en créant
-     * les acteurs avec seulement les informations nécessaires, télécharge
-     * leurs photos de profil et crée leurs rôles associés.
+     * Cette méthode sauvegarde le casting d'un média en créant
+     * les acteurs avec leurs informations, télécharge leurs photos de profil et crée leurs rôles associés.
      * 
      * @param array $cast Les données du casting depuis l'API TMDB
      * @param callable $createRoleCallback Fonction pour créer le rôle (film ou série)

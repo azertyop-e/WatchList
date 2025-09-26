@@ -24,9 +24,6 @@
                     <a href="{{ route('top') }}" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 {{ request()->is('top') ? 'bg-blue-50 text-blue-600' : '' }}">
                         Les Top Films & Séries
                     </a>
-                    <a href="{{ route('seen') }}" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 {{ request()->is('seen') ? 'bg-blue-50 text-blue-600' : '' }}">
-                        Médias Vus
-                    </a>
                 </div>
             </div>
         </div>
@@ -85,7 +82,6 @@
                         <li><a href="{{ route('popular') }}" class="text-gray-600 hover:text-blue-600 transition-colors duration-200 {{ request()->is('popular') ? 'bg-blue-50 text-blue-600 px-2 py-1 rounded-md' : '' }}">Les populaires</a></li>
                         <li><a href="{{ route('top') }}" class="text-gray-600 hover:text-blue-600 transition-colors duration-200 {{ request()->is('top') ? 'bg-blue-50 text-blue-600 px-2 py-1 rounded-md' : '' }}">Les Top Films & Séries</a></li>
                         <li><a href="{{ route('movie.search') }}" class="text-gray-600 hover:text-blue-600 transition-colors duration-200 {{ request()->is('movie/search') ? 'bg-blue-50 text-blue-600 px-2 py-1 rounded-md' : '' }}">Recherche</a></li>
-                        <li><a href="{{ route('seen') }}" class="text-gray-600 hover:text-blue-600 transition-colors duration-200 {{ request()->is('seen') ? 'bg-blue-50 text-blue-600 px-2 py-1 rounded-md' : '' }}">Médias Vus</a></li>
                         <li><a href="{{ route('home') }}" class="text-gray-600 hover:text-blue-600 transition-colors duration-200 {{ request()->is('/') ? 'bg-blue-50 text-blue-600 px-2 py-1 rounded-md' : '' }}">Ma Liste</a></li>
                     </ul>
                 </div>

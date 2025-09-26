@@ -14,12 +14,12 @@ class Filter extends Component
     public $currentRoute;
     public $currentParams;
     public $urls;
-    public $context = 'unseen'|'seen';
+    public $context;
 
     /**
      * Create a new component instance.
      */
-    public function __construct($selectedGenre = '', $currentRoute = 'home', $currentParams = [], $context = 'unseen')
+    public function __construct($selectedGenre = '', $currentRoute = 'home', $currentParams = [], $context = 'all')
     {
         $this->selectedGenre = $selectedGenre;
         $this->currentRoute = $currentRoute;
@@ -37,14 +37,8 @@ class Filter extends Component
      */
     private function getAvailableGenres(): array
     {
-        $isSeen = $this->context === 'seen';
-        
-        $genres = Gender::where(function ($query) use ($isSeen) {
-            $query->whereHas('movies', function ($movieQuery) use ($isSeen) {
-                $movieQuery->where('is_seen', $isSeen);
-            })->orWhereHas('series', function ($seriesQuery) use ($isSeen) {
-                $seriesQuery->where('is_watched', $isSeen);
-            });
+        $genres = Gender::where(function ($query) {
+            $query->whereHas('movies')->orWhereHas('series');
         })
         ->orderBy('name')
         ->get()

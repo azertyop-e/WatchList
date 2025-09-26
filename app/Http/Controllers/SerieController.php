@@ -467,43 +467,6 @@ class SerieController extends MediaController
         return redirect()->back()->with('success', 'Série marquée comme non vue');
     }
 
-    /**
-     * Récupère les séries vues par l'utilisateur avec filtrage par genre
-     * 
-     * Cette méthode récupère toutes les séries sauvegardées en base de données
-     * qui ont été marquées comme vues, avec possibilité de filtrer par genre.
-     * Elle récupère également la liste des genres disponibles pour le filtrage.
-     * 
-     * @param Request $request Contient le paramètre optionnel 'genre' pour le filtrage
-     * 
-     * @return \Illuminate\View\View Vue 'series.seen' avec les séries vues et genres
-     */
-    public function getSeenMedia(Request $request)
-    {
-        $query = Series::with('genders')->where('is_watched', true);
-        
-        if ($request->has('genre') && $request->input('genre') != '') {
-            $genreId = $request->input('genre');
-            $query->whereHas('genders', function($q) use ($genreId) {
-                $q->where('gender.id', $genreId);
-            });
-        }
-        
-        $selectedType = $request->input('type', 'serie');
-        
-        $series = $query->orderBy('updated_at', 'desc')->get();
-        
-        $genres = Gender::whereHas('series', function($q) {
-            $q->where('is_watched', true);
-        })->orderBy('name')->get();
-        
-        return view('series.seen', [
-            'series' => $series,
-            'genres' => $genres,
-            'selectedGenre' => $request->input('genre', ''),
-            'selectedType' => $selectedType
-        ]);
-    }
 
     /**
      * Récupère les détails d'une série
